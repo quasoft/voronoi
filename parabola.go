@@ -86,7 +86,7 @@ func GetXOfIntersection(node *btree.Node, sweepLine int) int {
 	// X of the intersection is one of those roots.
 	var x float64
 	if leftFocus.Y < rightFocus.Y {
-		x = math.Max(root1, root2)
+		x = math.Min(root1, root2)
 	} else {
 		x = math.Max(root1, root2)
 	}
@@ -108,7 +108,7 @@ func GetXByY(focus Site, y int, sweepLine int) int {
 	// X of the intersection is one of those roots.
 	var x float64
 	if focus.Y < focus.Y {
-		x = math.Max(root1, root2)
+		x = math.Min(root1, root2)
 	} else {
 		x = math.Max(root1, root2)
 	}
