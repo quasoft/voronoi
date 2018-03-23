@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-
-	"github.com/quasoft/btree"
 )
 
 // Arc represents an arc of a parabola (part of parabola), that lies on the beach line.
@@ -30,12 +28,6 @@ func NewArc(site Site) *Arc {
 // Not used in voronoi generator. Implemented just to fullfill ValueInterface.
 func (a Arc) Less(value interface{}) bool {
 	return a.Site.X < value.(Arc).Site.X
-}
-
-// NewArcNode creates a new tree node for the given site event.
-func NewArcNode(event *Event) *btree.Node {
-	arc := NewArc(event.site)
-	return &btree.Node{Value: arc}
 }
 
 // GetParabolaABC returns the a, b and c coefficients of the standard form of
@@ -63,12 +55,12 @@ func GetParabolaABC(focus Site, yOfDirectrix int) (float64, float64, float64) {
 }
 
 // GetXOfIntersection returns the x of the intersection of two parabola arcs.
-func GetXOfIntersection(node *btree.Node, sweepLine int) int {
-	left := node.PrevLeaf()
-	right := node.NextLeaf()
+func GetXOfIntersection(node *VNode, sweepLine int) int {
+	left := node.PrevArc()
+	right := node.NextArc()
 
-	leftFocus := left.Value.(*Arc).Site
-	rightFocus := right.Value.(*Arc).Site
+	leftFocus := left.Site
+	rightFocus := right.Site
 
 	// Determine the a, b and c coefficients for the two parabolas
 	a1, b1, c1 := GetParabolaABC(leftFocus, sweepLine)

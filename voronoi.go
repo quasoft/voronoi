@@ -2,10 +2,9 @@ package goalgorithms
 
 import (
 	"container/heap"
+	"fmt"
 	"image"
 	"log"
-
-	"github.com/quasoft/btree"
 )
 
 // RVertex repsesent a vertex on the resulting voronoi diagram.
@@ -20,7 +19,7 @@ type Voronoi struct {
 	Bounds       image.Rectangle
 	Sites        SiteSlice
 	EventQueue   EventQueue
-	ParabolaTree *btree.Node
+	ParabolaTree *VNode
 	SweepLine    int // tracks the current position of the sweep line; updated when a new site is added.
 	Result       []RVertex
 }
@@ -86,14 +85,26 @@ func (v *Voronoi) Generate() {
 }
 
 // findNodeAbove finds the node for the parabola that is vertically above the specified site.
-func (v *Voronoi) findNodeAbove(site Site) *btree.Node {
+func (v *Voronoi) findNodeAbove(site Site) *VNode {
 	node := v.ParabolaTree
 
 	for !node.IsLeaf() {
+		if node.IsLeaf() {
+			log.Printf("At leaf %d,%d\r\n", node.Site.X, node.Site.Y)
+		} else {
+			log.Printf(
+				"At internal node %d,%d <-> %d,%d\r\n",
+				node.PrevArc().Site.X, node.PrevArc().Site.Y,
+				node.NextArc().Site.X, node.NextArc().Site.Y,
+			)
+		}
+
 		x := GetXOfIntersection(node, v.SweepLine)
 		if site.X < x {
+			log.Printf("site.X (%d) < x (%d), going left\r\n", site.X, x)
 			node = node.Left
 		} else {
+			log.Printf("site.X (%d) >= x (%d), going right\r\n", site.X, x)
 			node = node.Right
 		}
 		if node.IsLeaf() {
@@ -119,32 +130,30 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	// If the binary tree is empty, just add an arc for this site as the only leaf in the tree
 	if v.ParabolaTree == nil {
 		log.Print("Adding event as root\r\n")
-		v.ParabolaTree = NewArcNode(event)
+		v.ParabolaTree = &VNode{Site: event.site}
 		return
 	}
 
 	// If the tree is not empty, find the arc vertically above the new site
-	arcNode := v.findNodeAbove(event.site)
-	if arcNode == nil {
+	arcAbove := v.findNodeAbove(event.site)
+	if arcAbove == nil {
 		log.Print("Could not find arc above event site!\r\n")
 		// Do something
 		return
 	}
+	log.Printf("Arc above: %d:%d\r\n", arcAbove.Site.X, arcAbove.Site.Y)
 
-	arc := arcNode.Value.(*Arc)
-	log.Printf("Arc above: %d:%d\r\n", arc.Site.X, arc.Site.Y)
-
-	if len(arc.Events) > 0 {
-		log.Printf("Removing %d events from queue.\r\n", len(arc.Events))
+	if len(arcAbove.Events) > 0 {
+		log.Printf("Removing %d events from queue.\r\n", len(arcAbove.Events))
 
 		// Remove false circle events from queue
-		for _, e := range arc.Events {
+		for _, e := range arcAbove.Events {
 			v.EventQueue.Remove(e)
 		}
-		arc.Events = nil
+		arcAbove.Events = nil
 	}
 
-	y := GetYByX(arc.Site, event.site.X, v.SweepLine)
+	y := GetYByX(arcAbove.Site, event.site.X, v.SweepLine)
 	point := RVertex{event.site.X, y}
 	log.Printf("Y of intersection = %d:%d\r\n", point.X, point.Y)
 	v.Result = append(v.Result, point)
@@ -156,11 +165,60 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	//  (  )  [old]
 	// /    \
 	//[old]  [new]
-	arcNode.Right = btree.New(arc)                         // Copy of the old arc
-	arcNode.Left = btree.New(&Arc{})                       // Internal node
-	arcNode.Left.Left = btree.New(arc)                     // Copy of the old arc
-	arcNode.Left.Right = btree.New(&Arc{Site: event.site}) // The new arc
-	arcNode.Value = &Arc{}                                 // Remove the value of the internal node
+	arcAbove.Right = &VNode{Site: arcAbove.Site, Events: arcAbove.Events}     // Copy of the old arc
+	arcAbove.Left = &VNode{}                                                  // Internal node
+	arcAbove.Left.Left = &VNode{Site: arcAbove.Site, Events: arcAbove.Events} // Copy of the old arc
+	arcAbove.Left.Right = &VNode{Site: event.site}                            // The new arc
+	arcAbove.Site.X = 0
+	arcAbove.Site.Y = 0
+	arcAbove.Events = nil
+
+	//addCircleEvent()
+}
+
+func (v *Voronoi) calcCircleCenter(site1, site2, site3 Site) (cx int, cy int, err error) {
+	cx = 0
+	cy = 0
+	err = nil
+
+	x1 := float64(site1.X)
+	y1 := float64(site1.Y)
+
+	x2 := float64(site2.X)
+	y2 := float64(site2.Y)
+
+	x3 := float64(site3.X)
+	y3 := float64(site3.Y)
+
+	mr := (y2 - y1) / (x2 - x1)
+	mt := (y3 - y2) / (x3 - x2)
+
+	if mr == mt {
+		err = fmt.Errorf("no circle found connecting points %f,%f %f,%f and %f,%f", x1, y1, x2, y2, x3, y3)
+		return
+	}
+
+	x := (mr*mt*(y3-y1) + mr*(x2+x3) - mt*(x1+x2)) / (2 * (mr - mt))
+	y := (y1+y2)/2 - (x-(x1+x2)/2)/mr
+	cx = int(x + 0.5)
+	cy = int(y + 0.5)
+	//r := math.Pow((math.Pow((x2-x), 2) + math.Pow((y2-y), 2)), 0.5)
+	return
+}
+
+func (v *Voronoi) addCircleEvent(site1, site2, site3 Site) {
+	x, y, err := v.calcCircleCenter(site1, site2, site3)
+	if err != nil {
+		return
+	}
+
+	log.Printf(
+		"Found circle with center %d,%d for sites <%d:%d> <%d:%d> <%d:%d>\r\n",
+		x, y,
+		site1.X, site1.Y,
+		site2.X, site2.Y,
+		site3.X, site3.Y,
+	)
 }
 
 func (v *Voronoi) handleCircleEvent(event *Event) {
