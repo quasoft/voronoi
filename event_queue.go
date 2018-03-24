@@ -33,7 +33,7 @@ func NewEventQueue(sites SiteSlice) EventQueue {
 	i := 0
 	for _, site := range sites {
 		eventQueue[i] = &Event{
-			site:  site,
+			Site:  site,
 			index: i,
 		}
 		i++
@@ -46,7 +46,7 @@ func (pq EventQueue) Len() int { return len(pq) }
 
 func (pq EventQueue) Less(i, j int) bool {
 	// We want Pop to give us the event with highest 'y' position.
-	return pq[i].site.Y < pq[j].site.Y
+	return pq[i].Site.Y < pq[j].Site.Y
 }
 
 func (pq EventQueue) Swap(i, j int) {
