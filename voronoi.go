@@ -67,7 +67,7 @@ func (v *Voronoi) HandleNextEvent() {
 	if v.EventQueue.Len() > 0 {
 		// Process events by Y (priority)
 		event := heap.Pop(&v.EventQueue).(*Event)
-		v.SweepLine = event.Site.Y
+		v.SweepLine = event.Y
 		if event.EventType == EventSite {
 			v.handleSiteEvent(event)
 		} else {
@@ -118,25 +118,27 @@ func (v *Voronoi) findNodeAbove(site Site) *VNode {
 
 func (v *Voronoi) handleSiteEvent(event *Event) {
 	log.Println()
-	log.Printf("Handling site event %d:%d\r\n", event.Site.X, event.Site.Y)
+	log.Printf("Handling site event %d:%d\r\n", event.X, event.Y)
 	log.Printf("Sweep line: %d", v.SweepLine)
 	log.Printf("Tree: %v", v.ParabolaTree)
 
-	// Event with Y above the sweep line should be ignored
-	if event.Site.Y < v.SweepLine {
+	// Event with Y above the sweep line should be ignored.
+	if event.Y < v.SweepLine {
 		log.Printf("Ignoring event as it's above the sweep line (%d)\r\n", v.SweepLine)
 		return
 	}
 
+	eventSite := Site{event.X, event.Y}
+
 	// If the binary tree is empty, just add an arc for this site as the only leaf in the tree
 	if v.ParabolaTree == nil {
 		log.Print("Adding event as root\r\n")
-		v.ParabolaTree = &VNode{Site: event.Site}
+		v.ParabolaTree = &VNode{Site: eventSite}
 		return
 	}
 
 	// If the tree is not empty, find the arc vertically above the new site
-	arcAbove := v.findNodeAbove(event.Site)
+	arcAbove := v.findNodeAbove(eventSite)
 	if arcAbove == nil {
 		log.Print("Could not find arc above event site!\r\n")
 		// Do something
@@ -154,8 +156,8 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 		arcAbove.Events = nil
 	}
 
-	y := GetYByX(arcAbove.Site, event.Site.X, v.SweepLine)
-	point := RVertex{event.Site.X, y}
+	y := GetYByX(arcAbove.Site, eventSite.X, v.SweepLine)
+	point := RVertex{eventSite.X, y}
 	log.Printf("Y of intersection = %d:%d\r\n", point.X, point.Y)
 	v.Result = append(v.Result, point)
 
@@ -179,7 +181,7 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 
 	// The new arc
 	arcAbove.Left.Right = &VNode{
-		Site:   event.Site,
+		Site:   eventSite,
 		Parent: arcAbove.Left,
 	}
 	newArc := arcAbove.Left.Right
@@ -270,7 +272,8 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *VNode) {
 
 	event := &Event{
 		EventType: EventCircle,
-		Site:      Site{arc2.Site.X, bottomY},
+		X:         arc2.Site.X,
+		Y:         bottomY,
 	}
 	v.EventQueue.Push(event)
 
@@ -282,7 +285,7 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *VNode) {
 
 func (v *Voronoi) handleCircleEvent(event *Event) {
 	log.Println()
-	log.Printf("Handling circle event %d:%d\r\n", event.Site.X, event.Site.Y)
+	log.Printf("Handling circle event %d:%d\r\n", event.X, event.Y)
 	log.Printf("Sweep line: %d", v.SweepLine)
 	log.Printf("Tree: %v", v.ParabolaTree)
 

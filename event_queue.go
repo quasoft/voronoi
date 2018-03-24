@@ -16,7 +16,7 @@ const (
 
 // Event represents a site or circle event.
 type Event struct {
-	Site      Site
+	X, Y      int       // X and Y of the site, or X and Y of the bottom point of the circle.
 	index     int       // The index in the slice. Maintained by heap.Interface methods. Needed by Remove method.
 	EventType EventType // The type of the event. Site = 0 and Circle = 1.
 	Node      *VNode    // The related arc node. Only relevant for circle events.
@@ -33,7 +33,8 @@ func NewEventQueue(sites SiteSlice) EventQueue {
 	i := 0
 	for _, site := range sites {
 		eventQueue[i] = &Event{
-			Site:  site,
+			X:     site.X,
+			Y:     site.Y,
 			index: i,
 		}
 		i++
@@ -46,7 +47,7 @@ func (pq EventQueue) Len() int { return len(pq) }
 
 func (pq EventQueue) Less(i, j int) bool {
 	// We want Pop to give us the event with highest 'y' position.
-	return pq[i].Site.Y < pq[j].Site.Y
+	return pq[i].Y < pq[j].Y
 }
 
 func (pq EventQueue) Swap(i, j int) {
