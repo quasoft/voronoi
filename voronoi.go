@@ -70,7 +70,7 @@ func (v *Voronoi) HandleNextEvent() {
 
 		// Event with Y above the sweep line should be ignored.
 		if event.Y < v.SweepLine {
-			log.Printf("Ignoring event as it's above the sweep line (%d)\r\n", v.SweepLine)
+			log.Printf("Ignoring event with Y %d as it's above the sweep line (%d)\r\n", event.Y, v.SweepLine)
 			return
 		}
 
