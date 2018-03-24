@@ -84,6 +84,7 @@ func (pq *EventQueue) Push(x interface{}) {
 	event.index = n
 	log.Printf("Storing event at index %d\r\n", event.index)
 	*pq = append(*pq, event)
+	heap.Fix(pq, n)
 }
 
 func (pq *EventQueue) Pop() interface{} {
