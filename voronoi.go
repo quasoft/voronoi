@@ -312,18 +312,18 @@ func (v *Voronoi) handleCircleEvent(event *Event) {
 
 	log.Printf("Node to be removed: %v", event.Node)
 
-	// Remove other circle events, in which this node participates
-	if len(event.Node.Events) > 0 {
-		log.Printf("Removing %d events from queue.\r\n", len(event.Node.Events))
+	// Delete the arc for event.Node from the tree
+	prevArc := event.Node.PrevArc()
+	nextArc := event.Node.NextArc()
+	log.Printf("Removing arc %v between %v and %v", event.Node, prevArc, nextArc)
+	log.Printf("Previous arc: %v", prevArc)
+	log.Printf("Next arc: %v", nextArc)
+	v.removeArc(event.Node)
 
-		// Remove false circle events from queue
-		for _, e := range event.Node.Events {
-			if e.index > -1 {
-				v.EventQueue.Remove(e)
-			}
-		}
-		event.Node.Events = nil
-	}
+	// Remove circle events
+	v.removeCircleEvent(prevArc)
+	v.removeCircleEvent(event.Node)
+	v.removeCircleEvent(nextArc)
 
 	// Add center of circle as vertex
 	point := RVertex{event.X, event.Y - event.Radius}
@@ -331,4 +331,46 @@ func (v *Voronoi) handleCircleEvent(event *Event) {
 	v.Result = append(v.Result, point)
 
 	return
+}
+
+func (v *Voronoi) removeArc(node *VNode) {
+	parent := node.Parent
+	other := (*VNode)(nil)
+	if parent.Left == node {
+		other = parent.Right
+	} else {
+		other = parent.Left
+	}
+	grandParent := parent.Parent
+	if grandParent == nil {
+		v.ParabolaTree = other
+		v.ParabolaTree.Parent = nil
+		return
+	}
+
+	if grandParent.Left == parent {
+		grandParent.Left = other
+		grandParent.Left.Parent = grandParent
+	} else if grandParent.Right == parent {
+		grandParent.Right = other
+		grandParent.Right.Parent = grandParent
+	}
+}
+
+// removeCircleEvent remove the circle event where the specified node represents the middle arc.
+func (v *Voronoi) removeCircleEvent(node *VNode) {
+	if node == nil {
+		return
+	}
+
+	if len(node.Events) > 0 {
+		log.Printf("Removing %d events from queue for arc %v.\r\n", len(node.Events), node.Site)
+
+		for _, e := range node.Events {
+			if e.index > -1 {
+				v.EventQueue.Remove(e)
+			}
+		}
+		node.Events = nil
+	}
 }
