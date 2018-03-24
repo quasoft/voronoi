@@ -1,0 +1,117 @@
+<!doctype>
+<html>
+    <head>
+		<!-- load the d3.js library -->	
+		<script src="http://d3js.org/d3.v3.min.js"></script>
+			
+		<style>
+		.node circle {
+		  fill: #fff;
+		  stroke: steelblue;
+		  stroke-width: 3px;
+		}
+
+		.node text { font: 12px sans-serif; }
+
+		.link {
+		  fill: none;
+		  stroke: #ccc;
+		  stroke-width: 2px;
+		}
+
+		</style>
+		<style>
+		table img {
+		  max-height: 100%;
+		  max-width: 100%;
+		}
+
+        table td {
+            height: 100%;
+        }
+
+        #tree {
+            height: 100%;
+            border: 1px solid #000
+        }
+		</style>
+	</head>
+    <body>
+		<p>Sweep line: {{.SweepLine}}</p>
+		<p>Events left: {{.EventsLeft}}</p>
+		{{if gt .EventsLeft 0}}<a href="/next">Next</a> &nbsp; {{end}}<a href="/reset">Reset</a>
+        <br />
+		<table width="100%">
+			<tbody>
+                <tr><td width="50%"><img src="diagram.png" /></td><td width="50%"><div id="tree" /></td></tr>
+				<tr><td width="100%" colspan="2"><div id="log"><p>Output:</p><pre>{{.Log}}</pre></div></td></tr>
+			</tbody>
+		</table>
+		<script>
+        // Draw binary tree of parabola arcs
+		var i = 0;
+
+		var tree = d3.layout.tree().size([640, 480]);
+
+		var diagonal = d3.svg.diagonal()
+			.projection(function(d) { return [d.x, d.y]; });
+
+        d3.json("/tree.json", function(error, data) {
+            var svg = d3.select("#tree").append("svg")
+                .attr("width", "100%")
+                .attr("height", "100%")
+                .call(d3.behavior.zoom().on("zoom", function () {
+                    svg.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+                }))
+                .append("g")
+                .attr("transform", "translate(0,50)");
+
+            root = data[0];
+            
+            update(root);
+
+            function update(source) {
+
+            // Compute the new tree layout.
+            var nodes = tree.nodes(root).reverse(),
+                links = tree.links(nodes);
+
+            // Normalize for fixed-depth.
+            nodes.forEach(function(d) { d.y = d.depth * 100; });
+
+            // Declare the nodes…
+            var node = svg.selectAll("g.node")
+                .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+            // Enter the nodes.
+            var nodeEnter = node.enter().append("g")
+                .attr("class", "node")
+                .attr("transform", function(d) { 
+                    return "translate(" + d.x + "," + d.y + ")"; });
+
+            nodeEnter.append("circle")
+                .attr("r", 10)
+                .style("fill", "#fff");
+
+            nodeEnter.append("text")
+                .attr("y", function(d) { 
+                    return d.children || d._children ? -18 : 18; })
+                .attr("dy", ".35em")
+                .attr("text-anchor", "middle")
+                .text(function(d) { return d.name; })
+                .style("fill-opacity", 1);
+
+            // Declare the links…
+            var link = svg.selectAll("path.link")
+                .data(links, function(d) { return d.target.id; });
+
+            // Enter the links.
+            link.enter().insert("path", "g")
+                .attr("class", "link")
+                .attr("d", diagonal);
+
+            }            
+        });
+		</script>
+    </body>
+</html>
