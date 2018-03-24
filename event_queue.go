@@ -4,6 +4,7 @@ package goalgorithms
 
 import (
 	"container/heap"
+	"log"
 	"sort"
 )
 
@@ -55,12 +56,14 @@ func (pq EventQueue) Swap(i, j int) {
 	pq[i], pq[j] = pq[j], pq[i]
 	pq[i].index = i
 	pq[j].index = j
+	log.Printf("Swap %d with %d\r\n", i, j)
 }
 
 func (pq *EventQueue) Push(x interface{}) {
 	n := len(*pq)
 	event := x.(*Event)
 	event.index = n
+	log.Printf("Storing event at index %d\r\n", event.index)
 	*pq = append(*pq, event)
 }
 
@@ -75,5 +78,6 @@ func (pq *EventQueue) Pop() interface{} {
 
 // Remove removes the element with the specified index from the queue.
 func (pq *EventQueue) Remove(event *Event) {
+	log.Printf("Removing event at index %d\r\n", event.index)
 	heap.Remove(pq, event.index)
 }
