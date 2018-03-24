@@ -263,11 +263,16 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *VNode) {
 	}
 
 	log.Printf("Found circle with center %d,%d an r=%d\r\n", x, y, r)
-	tangentY := y + r
+
+	// Only add events with bottom point below the sweep line
+	bottomY := y + r
+	if bottomY <= v.SweepLine {
+		return
+	}
 
 	event := &Event{
 		EventType: EventCircle,
-		Site:      Site{arc2.Site.X, tangentY},
+		Site:      Site{arc2.Site.X, bottomY},
 	}
 	v.EventQueue.Push(event)
 	arc2.AddEvent(event)
