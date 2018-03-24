@@ -118,7 +118,7 @@ func (v *Voronoi) findNodeAbove(site Site) *VNode {
 
 func (v *Voronoi) handleSiteEvent(event *Event) {
 	log.Println()
-	log.Printf("Handling event %d:%d of type %d\r\n", event.Site.X, event.Site.Y, event.EventType)
+	log.Printf("Handling site event %d:%d\r\n", event.Site.X, event.Site.Y)
 	log.Printf("Sweep line: %d", v.SweepLine)
 	log.Printf("Tree: %v", v.ParabolaTree)
 
@@ -274,5 +274,9 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *VNode) {
 }
 
 func (v *Voronoi) handleCircleEvent(event *Event) {
+	log.Println()
+	log.Printf("Handling circle event %d:%d\r\n", event.Site.X, event.Site.Y)
+	log.Printf("Sweep line: %d", v.SweepLine)
+	log.Printf("Tree: %v", v.ParabolaTree)
 	return
 }
