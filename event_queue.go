@@ -16,10 +16,9 @@ const (
 
 // Event represents a site or circle event.
 type Event struct {
-	Site Site
-	// The index is needed by update and is maintained by the heap.Interface methods.
-	index     int // The index of the event in the heap.
-	EventType EventType
+	Site      Site
+	index     int       // The index in the slice. Maintained by heap.Interface methods. Needed by Remove method.
+	EventType EventType // The type of the event. Site = 0 and Circle = 1.
 }
 
 // A EventQueue is a priority queue that implements heap.Interface and holds Events.
