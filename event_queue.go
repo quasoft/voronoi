@@ -46,9 +46,9 @@ func NewEventQueue(sites SiteSlice) EventQueue {
 	return eventQueue
 }
 
-func (n *EventQueue) String() string {
+func (n EventQueue) String() string {
 	s := ""
-	for i, event := range *n {
+	for i, event := range n {
 		prefix := ""
 		if event.EventType == EventCircle {
 			prefix = "C"
