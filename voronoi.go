@@ -151,7 +151,9 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 
 		// Remove false circle events from queue
 		for _, e := range arcAbove.Events {
-			v.EventQueue.Remove(e)
+			if e.index > -1 {
+				v.EventQueue.Remove(e)
+			}
 		}
 		arcAbove.Events = nil
 	}
@@ -291,5 +293,24 @@ func (v *Voronoi) handleCircleEvent(event *Event) {
 	log.Printf("Tree: %v", v.ParabolaTree)
 
 	log.Printf("Node to be removed: %v", event.Node)
+
+	// Remove other circle events, in which this node participates
+	if len(event.Node.Events) > 0 {
+		log.Printf("Removing %d events from queue.\r\n", len(event.Node.Events))
+
+		// Remove false circle events from queue
+		for _, e := range event.Node.Events {
+			if e.index > -1 {
+				v.EventQueue.Remove(e)
+			}
+		}
+		event.Node.Events = nil
+	}
+
+	// Add center of circle as vertex
+	point := RVertex{event.X, event.Y - event.Radius}
+	log.Printf("Vertex at %d:%d (center of circle)\r\n", point.X, point.Y)
+	v.Result = append(v.Result, point)
+
 	return
 }
