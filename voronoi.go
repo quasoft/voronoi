@@ -274,6 +274,7 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *VNode) {
 		EventType: EventCircle,
 		X:         arc2.Site.X,
 		Y:         bottomY,
+		Radius:    r,
 	}
 	v.EventQueue.Push(event)
 
@@ -285,7 +286,7 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *VNode) {
 
 func (v *Voronoi) handleCircleEvent(event *Event) {
 	log.Println()
-	log.Printf("Handling circle event %d:%d\r\n", event.X, event.Y)
+	log.Printf("Handling circle event %d:%d with radius %d\r\n", event.X, event.Y, event.Radius)
 	log.Printf("Sweep line: %d", v.SweepLine)
 	log.Printf("Tree: %v", v.ParabolaTree)
 

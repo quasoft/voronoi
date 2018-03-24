@@ -20,6 +20,7 @@ type Event struct {
 	index     int       // The index in the slice. Maintained by heap.Interface methods. Needed by Remove method.
 	EventType EventType // The type of the event. Site = 0 and Circle = 1.
 	Node      *VNode    // The related arc node. Only relevant for circle events.
+	Radius    int       // Radius of the circle.
 }
 
 // A EventQueue is a priority queue that implements heap.Interface and holds Events.
