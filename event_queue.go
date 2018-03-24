@@ -4,6 +4,7 @@ package goalgorithms
 
 import (
 	"container/heap"
+	"fmt"
 	"log"
 	"sort"
 )
@@ -43,6 +44,24 @@ func NewEventQueue(sites SiteSlice) EventQueue {
 	}
 	heap.Init(&eventQueue)
 	return eventQueue
+}
+
+func (n *EventQueue) String() string {
+	s := ""
+	for i, event := range *n {
+		prefix := ""
+		if event.EventType == EventCircle {
+			prefix = "C"
+		} else {
+			prefix = "S"
+		}
+
+		if i > 0 {
+			s += ", "
+		}
+		s += fmt.Sprintf("{%d#%s %d,%d}", event.index, prefix, event.X, event.Y)
+	}
+	return "{" + s + "}"
 }
 
 func (pq EventQueue) Len() int { return len(pq) }
