@@ -55,7 +55,7 @@ func GetParabolaABC(focus Site, yOfDirectrix int) (float64, float64, float64) {
 }
 
 // GetXOfIntersection returns the x of the intersection of two parabola arcs.
-func GetXOfIntersection(node *VNode, sweepLine int) int {
+func GetXOfIntersection(node *Node, directrix int) int {
 	left := node.PrevChildArc()
 	right := node.NextChildArc()
 
@@ -63,8 +63,8 @@ func GetXOfIntersection(node *VNode, sweepLine int) int {
 	rightFocus := right.Site
 
 	// Determine the a, b and c coefficients for the two parabolas
-	a1, b1, c1 := GetParabolaABC(leftFocus, sweepLine)
-	a2, b2, c2 := GetParabolaABC(rightFocus, sweepLine)
+	a1, b1, c1 := GetParabolaABC(leftFocus, directrix)
+	a2, b2, c2 := GetParabolaABC(rightFocus, directrix)
 
 	// Calculate the roots of the coefficients difference.
 	a := a1 - a2
@@ -88,16 +88,17 @@ func GetXOfIntersection(node *VNode, sweepLine int) int {
 	return int(x)
 }
 
-func GetYByX(focus Site, x int, sweepLine int) int {
+// GetYByX calculates the Y value for the parabola with the given focus and directrix (the sweep line)
+func GetYByX(focus Site, x int, directrix int) int {
 	xf := float64(x)
-	a, b, c := GetParabolaABC(focus, sweepLine)
+	a, b, c := GetParabolaABC(focus, directrix)
 	y := a*math.Pow(xf, 2) + b*xf + c
 
 	if math.IsNaN(y) {
 		y = 0
 	}
 
-	log.Printf("focus: %v:%v, x=%v, sweep line=%v \r\n", focus.X, focus.Y, xf, sweepLine)
+	log.Printf("focus: %v:%v, x=%v, directrix=%v \r\n", focus.X, focus.Y, xf, directrix)
 	log.Printf("a=%v, b=%v, c=%v, y=%v \r\n", a, b, c, y)
 	return int(y)
 }

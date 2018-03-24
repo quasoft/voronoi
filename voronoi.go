@@ -16,16 +16,18 @@ type RVertex struct {
 	Y int
 }
 
+// Voronoi implements Fortune's algorithm for voronoi diagram generation.
 type Voronoi struct {
 	Bounds       image.Rectangle
 	Sites        SiteSlice
 	EventQueue   EventQueue
-	ParabolaTree *VNode
+	ParabolaTree *Node
 	SweepLine    int // tracks the current position of the sweep line; updated when a new site is added.
 	Result       []RVertex
 }
 
-func NewVoronoi(sites SiteSlice, bounds image.Rectangle) *Voronoi {
+// New creates a voronoi diagram generator for a list of sites and within the specified bounds.
+func New(sites SiteSlice, bounds image.Rectangle) *Voronoi {
 	voronoi := &Voronoi{Bounds: bounds}
 	voronoi.Sites = make(SiteSlice, len(sites), len(sites))
 	copy(voronoi.Sites, sites)
@@ -33,12 +35,13 @@ func NewVoronoi(sites SiteSlice, bounds image.Rectangle) *Voronoi {
 	return voronoi
 }
 
+// NewFromPoints creates a voronoi diagram generator for a list of points within the specified bounds.
 func NewFromPoints(points []image.Point, bounds image.Rectangle) *Voronoi {
 	var sites SiteSlice
 	for _, point := range points {
 		sites = append(sites, Site{point.X, point.Y})
 	}
-	return NewVoronoi(sites, bounds)
+	return New(sites, bounds)
 }
 
 func (v *Voronoi) init() {
@@ -56,6 +59,7 @@ func (v *Voronoi) init() {
 	// TODO: Create DCEL list
 }
 
+// Reset clears the state of the voronoi generator.
 func (v *Voronoi) Reset() {
 	v.EventQueue = NewEventQueue(v.Sites)
 	v.ParabolaTree = nil
@@ -63,6 +67,8 @@ func (v *Voronoi) Reset() {
 	v.SweepLine = 0
 }
 
+// HandleNextEvent processes the next event from the internal event queue.
+// Used from the player application while developing the algorithm.
 func (v *Voronoi) HandleNextEvent() {
 	if v.EventQueue.Len() > 0 {
 		// Process events by Y (priority)
@@ -83,6 +89,7 @@ func (v *Voronoi) HandleNextEvent() {
 	}
 }
 
+// Generate runs the algorithm for the given sites and bounds, creating a voronoi diagram.
 func (v *Voronoi) Generate() {
 	v.Reset()
 
@@ -93,7 +100,7 @@ func (v *Voronoi) Generate() {
 }
 
 // findNodeAbove finds the node for the parabola that is vertically above the specified site.
-func (v *Voronoi) findNodeAbove(site Site) *VNode {
+func (v *Voronoi) findNodeAbove(site Site) *Node {
 	node := v.ParabolaTree
 
 	for !node.IsLeaf() {
@@ -134,7 +141,7 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	// If the binary tree is empty, just add an arc for this site as the only leaf in the tree
 	if v.ParabolaTree == nil {
 		log.Print("Adding event as root\r\n")
-		v.ParabolaTree = &VNode{Site: eventSite}
+		v.ParabolaTree = &Node{Site: eventSite}
 		return
 	}
 
@@ -163,24 +170,24 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	//[old]  [new]
 
 	// Copy of the old arc
-	arcAbove.Right = &VNode{
+	arcAbove.Right = &Node{
 		Site:   arcAbove.Site,
 		Events: arcAbove.Events,
 		Parent: arcAbove,
 	}
 
 	// Internal node
-	arcAbove.Left = &VNode{Parent: arcAbove}
+	arcAbove.Left = &Node{Parent: arcAbove}
 
 	// The new arc
-	arcAbove.Left.Right = &VNode{
+	arcAbove.Left.Right = &Node{
 		Site:   eventSite,
 		Parent: arcAbove.Left,
 	}
 	newArc := arcAbove.Left.Right
 
 	// Copy of the old arc
-	arcAbove.Left.Left = &VNode{
+	arcAbove.Left.Left = &Node{
 		Site:   arcAbove.Site,
 		Events: arcAbove.Events,
 		Parent: arcAbove.Left,
@@ -207,6 +214,8 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	}
 }
 
+// calcCircle checks if the circle passing through three sites is counter-clockwise,
+// and retunrs the center of the circle and it's radius if it is.
 func (v *Voronoi) calcCircle(site1, site2, site3 Site) (x int, y int, r int, err error) {
 	// Solution by https://math.stackexchange.com/a/1268279/543428
 	// Explanation at http://mathforum.org/library/drmath/view/55002.html
@@ -261,7 +270,9 @@ func (v *Voronoi) calcCircle(site1, site2, site3 Site) (x int, y int, r int, err
 	return
 }
 
-func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *VNode) {
+// addCircleEvent adds a circle event for arc2 to the queue if the bottom point of
+// the circle is below the sweep line.
+func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *Node) {
 	if arc1 == nil || arc2 == nil || arc3 == nil {
 		return
 	}
@@ -321,9 +332,10 @@ func (v *Voronoi) handleCircleEvent(event *Event) {
 	return
 }
 
-func (v *Voronoi) removeArc(node *VNode) {
+// removeArc removes the given arc leaf from the binary tree.
+func (v *Voronoi) removeArc(node *Node) {
 	parent := node.Parent
-	other := (*VNode)(nil)
+	other := (*Node)(nil)
 	if parent.Left == node {
 		other = parent.Right
 	} else {
@@ -346,7 +358,7 @@ func (v *Voronoi) removeArc(node *VNode) {
 }
 
 // removeCircleEvent remove the circle event where the specified node represents the middle arc.
-func (v *Voronoi) removeCircleEvent(node *VNode) {
+func (v *Voronoi) removeCircleEvent(node *Node) {
 	if node == nil {
 		return
 	}

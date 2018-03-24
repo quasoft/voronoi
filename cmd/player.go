@@ -22,7 +22,7 @@ type D3Node struct {
 }
 
 // btreeToGraphNode converts a parabola binary tree to a tree of D3Nodes.
-func btreeToGraphNode(node *voronoi.VNode) *D3Node {
+func btreeToGraphNode(node *voronoi.Node) *D3Node {
 	if node == nil {
 		return nil
 	}
@@ -51,7 +51,7 @@ func btreeToGraphNode(node *voronoi.VNode) *D3Node {
 }
 
 // btreeToJSON converts a parabola binary tree to a JSON tree of D3 nodes.
-func btreeToJSON(node *voronoi.VNode) []byte {
+func btreeToJSON(node *voronoi.Node) []byte {
 	graphNode := btreeToGraphNode(node)
 	jsonTree, err := json.Marshal(graphNode)
 	if err != nil {

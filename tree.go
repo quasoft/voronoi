@@ -2,13 +2,13 @@ package voronoi
 
 import "fmt"
 
-// VNode represent an element in a binary tree.
+// Node represent an element in a binary tree.
 // Each Leaf in the tree represents an arc of a parabola (part of parabola),
 // that lies on the beach line. Leaf nodes store the site that created the arc
 // and pointers to the circle events associated with it.
 // Internal nodes represent intersections (breakpoints) between the arcs and
 // store no values.
-type VNode struct {
+type Node struct {
 	// Site is the focus of the parabola arc (the site which created the parabola).
 	// Not used for internal nodes.
 	Site Site
@@ -16,15 +16,15 @@ type VNode struct {
 	// Not used for internal nodes.
 	Events []*Event
 	// Pointer to the parent node.
-	Parent *VNode
+	Parent *Node
 	// Left stores a subtree of arcs with smaller X values.
-	Left *VNode
+	Left *Node
 	// Right stores a subtree of arcs with larger X values.
-	Right *VNode
+	Right *Node
 }
 
 // String method from https://github.com/golang/tour/blob/master/tree/tree.go
-func (n *VNode) String() string {
+func (n *Node) String() string {
 	if n == nil {
 		return "()"
 	}
@@ -41,12 +41,12 @@ func (n *VNode) String() string {
 
 // IsLeaf returns true if the TreeNode has no left or right children.
 // A single root node is also considered a leaf.
-func (n *VNode) IsLeaf() bool {
+func (n *Node) IsLeaf() bool {
 	return n.Left == nil && n.Right == nil
 }
 
 // PrevChildArc returns the node for the previous arc.
-func (n *VNode) PrevChildArc() *VNode {
+func (n *Node) PrevChildArc() *Node {
 	left := n.Left
 	for !left.IsLeaf() {
 		left = left.Right
@@ -55,7 +55,7 @@ func (n *VNode) PrevChildArc() *VNode {
 }
 
 // NextChildArc returns the node for the next arc.
-func (n *VNode) NextChildArc() *VNode {
+func (n *Node) NextChildArc() *Node {
 	right := n.Right
 	for !right.IsLeaf() {
 		right = right.Left
@@ -64,7 +64,7 @@ func (n *VNode) NextChildArc() *VNode {
 }
 
 // PrevArc returns the node for the previous arc.
-func (n *VNode) PrevArc() *VNode {
+func (n *Node) PrevArc() *Node {
 	// If an internal node, traverse down
 	if !n.IsLeaf() {
 		return n.PrevChildArc()
@@ -93,7 +93,7 @@ func (n *VNode) PrevArc() *VNode {
 }
 
 // NextArc returns the node for the next arc.
-func (n *VNode) NextArc() *VNode {
+func (n *Node) NextArc() *Node {
 	// If an internal node, traverse down
 	if !n.IsLeaf() {
 		return n.NextChildArc()
@@ -122,6 +122,6 @@ func (n *VNode) NextArc() *VNode {
 }
 
 // AddEvent pushes a pointer to an event in the Events list of the node.
-func (n *VNode) AddEvent(event *Event) {
+func (n *Node) AddEvent(event *Event) {
 	n.Events = append(n.Events, event)
 }

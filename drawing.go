@@ -48,8 +48,8 @@ var colors = []color.Color{
 	color.RGBA{0xee, 0x82, 0xee, 0xff},
 }
 
-// VoronoiDrawing draws the result of the voronoi diagram generator into an image.
-type VoronoiDrawing struct {
+// Drawing draws the result of the voronoi diagram generator into an image.
+type Drawing struct {
 	voronoi         *Voronoi
 	dst             *image.RGBA
 	ctx             *draw.Context
@@ -57,9 +57,9 @@ type VoronoiDrawing struct {
 	VertexColor     color.RGBA
 }
 
-// NewVoronoiDrawing creates a new voronoi diagram drawer.
-func NewVoronoiDrawing(voronoi *Voronoi, dst *image.RGBA) *VoronoiDrawing {
-	return &VoronoiDrawing{
+// NewDrawing creates a new voronoi diagram drawer.
+func NewDrawing(voronoi *Voronoi, dst *image.RGBA) *Drawing {
+	return &Drawing{
 		voronoi,
 		dst,
 		draw.NewContext(dst),
@@ -69,23 +69,23 @@ func NewVoronoiDrawing(voronoi *Voronoi, dst *image.RGBA) *VoronoiDrawing {
 }
 
 // Min returns the minimum point on the diagram.
-func (d *VoronoiDrawing) Min() image.Point {
+func (d *Drawing) Min() image.Point {
 	return d.dst.Bounds().Min
 }
 
 // Max returns the maximum point on the diagram.
-func (d *VoronoiDrawing) Max() image.Point {
+func (d *Drawing) Max() image.Point {
 	return d.dst.Bounds().Max
 }
 
 // SweepLine draws a sweep line with the given Y.
-func (d *VoronoiDrawing) SweepLine(y int) {
+func (d *Drawing) SweepLine(y int) {
 	d.ctx.SetPen(color.Black)
 	d.ctx.Line(0, y, d.Max().X-1, y)
 }
 
 // Site draws the specified site with the given color.
-func (d *VoronoiDrawing) Site(site Site, clr color.Color) {
+func (d *Drawing) Site(site Site, clr color.Color) {
 	d.ctx.SetPen(clr)
 
 	d.ctx.Cross(site.X, site.Y, 2)
@@ -99,13 +99,13 @@ func (d *VoronoiDrawing) Site(site Site, clr color.Color) {
 }
 
 // Vertex draws the specified vertex.
-func (d *VoronoiDrawing) Vertex(vertex RVertex) {
+func (d *Drawing) Vertex(vertex RVertex) {
 	d.ctx.SetPen(d.VertexColor)
 	d.ctx.Cross(vertex.X, vertex.Y, 2)
 }
 
 // Plot paints the voronoi diagram over the given image.
-func (d *VoronoiDrawing) Plot() {
+func (d *Drawing) Plot() {
 	// Draw border and fill with background color
 	d.ctx.SetPen(color.Black)
 	d.ctx.SetFill(color.White)
@@ -136,7 +136,7 @@ func (d *VoronoiDrawing) Plot() {
 // Plot creates an image and paints a voronoi diagram over it.
 func Plot(voronoi *Voronoi) *image.RGBA {
 	img := image.NewRGBA(voronoi.Bounds)
-	drawer := NewVoronoiDrawing(voronoi, img)
+	drawer := NewDrawing(voronoi, img)
 	drawer.Plot()
 	return img
 }
