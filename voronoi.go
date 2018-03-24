@@ -67,6 +67,13 @@ func (v *Voronoi) HandleNextEvent() {
 	if v.EventQueue.Len() > 0 {
 		// Process events by Y (priority)
 		event := heap.Pop(&v.EventQueue).(*Event)
+
+		// Event with Y above the sweep line should be ignored.
+		if event.Y < v.SweepLine {
+			log.Printf("Ignoring event as it's above the sweep line (%d)\r\n", v.SweepLine)
+			return
+		}
+
 		v.SweepLine = event.Y
 		if event.EventType == EventSite {
 			v.handleSiteEvent(event)
@@ -121,12 +128,6 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	log.Printf("Handling site event %d:%d\r\n", event.X, event.Y)
 	log.Printf("Sweep line: %d", v.SweepLine)
 	log.Printf("Tree: %v", v.ParabolaTree)
-
-	// Event with Y above the sweep line should be ignored.
-	if event.Y < v.SweepLine {
-		log.Printf("Ignoring event as it's above the sweep line (%d)\r\n", v.SweepLine)
-		return
-	}
 
 	eventSite := Site{event.X, event.Y}
 
