@@ -5,10 +5,10 @@ package goalgorithms
 import (
 	"container/heap"
 	"fmt"
-	"log"
 	"sort"
 )
 
+// EventType represent the type of the event - either site or circle event.
 type EventType int
 
 const (
@@ -28,7 +28,7 @@ type Event struct {
 // A EventQueue is a priority queue that implements heap.Interface and holds Events.
 type EventQueue []*Event
 
-// Creates a new event queue and initializes it with events for the given list of sites.
+// NewEventQueue creates a new queue and initializes it with events for the given list of sites.
 func NewEventQueue(sites SiteSlice) EventQueue {
 	sort.Sort(sites)
 
@@ -64,29 +64,32 @@ func (pq EventQueue) String() string {
 	return "{" + s + "}"
 }
 
+// Len returns the number of events in the queue.
 func (pq EventQueue) Len() int { return len(pq) }
 
+// Less compares two events and is needed as implementation of the Sort interface.
 func (pq EventQueue) Less(i, j int) bool {
 	// We want Pop to give us the event with highest 'y' position.
 	return pq[i].Y < pq[j].Y
 }
 
+// Swap swaps two events, updating their index in the slice.
 func (pq EventQueue) Swap(i, j int) {
 	pq[i], pq[j] = pq[j], pq[i]
 	pq[i].index = i
 	pq[j].index = j
-	log.Printf("Swap %d with %d\r\n", i, j)
 }
 
+// Push appends an item to the queue and reorders items if necessary.
 func (pq *EventQueue) Push(x interface{}) {
 	n := len(*pq)
 	event := x.(*Event)
 	event.index = n
-	log.Printf("Storing event at index %d\r\n", event.index)
 	*pq = append(*pq, event)
 	heap.Fix(pq, n)
 }
 
+// Pop removes the last element from the queue and sets its index to -1.
 func (pq *EventQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)
@@ -98,6 +101,5 @@ func (pq *EventQueue) Pop() interface{} {
 
 // Remove removes the element with the specified index from the queue.
 func (pq *EventQueue) Remove(event *Event) {
-	log.Printf("Removing event at index %d\r\n", event.index)
 	heap.Remove(pq, event.index)
 }
