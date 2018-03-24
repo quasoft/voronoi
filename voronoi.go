@@ -201,18 +201,14 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	if prevArc != nil {
 		prevPrevArc := prevArc.PrevArc()
 		log.Printf("Prev->prev arc for %v is %v\r\n", newArc, prevPrevArc)
-		if prevPrevArc != nil {
-			v.addCircleEvent(prevPrevArc.Site, prevArc.Site, newArc.Site)
-		}
+		v.addCircleEvent(prevPrevArc, prevArc, newArc)
 	}
 
 	// Check for circle events where the new arc is the left most arc
 	nextArc := newArc.NextArc()
 	if nextArc != nil {
 		nextNextArc := nextArc.NextArc()
-		if nextNextArc != nil {
-			v.addCircleEvent(newArc.Site, nextArc.Site, nextNextArc.Site)
-		}
+		v.addCircleEvent(newArc, nextArc, nextNextArc)
 	}
 }
 
@@ -255,22 +251,26 @@ func (v *Voronoi) calcCircle(site1, site2, site3 Site) (x int, y int, r int, err
 	return
 }
 
-func (v *Voronoi) addCircleEvent(node *VNode, site1, site2, site3 Site) {
-	log.Printf("Checking for circle at <%v> <%v> <%v>\r\n", site1, site2, site3)
-	x, y, r, err := v.calcCircle(site1, site2, site3)
+func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *VNode) {
+	if arc1 == nil || arc2 == nil || arc3 == nil {
+		return
+	}
+
+	log.Printf("Checking for circle at <%v> <%v> <%v>\r\n", arc1.Site, arc2.Site, arc3.Site)
+	x, y, r, err := v.calcCircle(arc1.Site, arc2.Site, arc3.Site)
 	if err != nil {
 		return
 	}
 
-	log.Printf("Found circle with center %d,%d for sites <%v> <%v> <%v>\r\n", x, y, site1, site2, site3)
+	log.Printf("Found circle with center %d,%d an r=%d\r\n", x, y, r)
 	tangentY := y + r
 
 	event := &Event{
 		EventType: EventCircle,
-		Site:      Site{site2.X, tangentY},
+		Site:      Site{arc2.Site.X, tangentY},
 	}
 	v.EventQueue.Push(event)
-	node.AddEvent(event)
+	arc2.AddEvent(event)
 }
 
 func (v *Voronoi) handleCircleEvent(event *Event) {
