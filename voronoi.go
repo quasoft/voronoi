@@ -218,6 +218,8 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 }
 
 func (v *Voronoi) calcCircle(site1, site2, site3 Site) (x int, y int, r int, err error) {
+	// Solution by https://math.stackexchange.com/a/1268279/543428
+	// Explanation at http://mathforum.org/library/drmath/view/55002.html
 	x = 0
 	y = 0
 	r = 0
