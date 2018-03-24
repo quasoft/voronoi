@@ -248,6 +248,7 @@ func (v *Voronoi) calcCircle(site1, site2, site3 Site) (x int, y int, r int, err
 	}
 
 	if x2-x1 == 0 || x3-x2 == 0 {
+		log.Printf("Ignoring circle, division by zero")
 		err = fmt.Errorf("no circle found connecting points %f,%f %f,%f and %f,%f", x1, y1, x2, y2, x3, y3)
 		return
 	}
@@ -256,6 +257,7 @@ func (v *Voronoi) calcCircle(site1, site2, site3 Site) (x int, y int, r int, err
 	mt := (y3 - y2) / (x3 - x2)
 
 	if mr == mt || mr-mt == 0 || mr == 0 {
+		log.Printf("Ignoring circle, division by zero")
 		err = fmt.Errorf("no circle found connecting points %f,%f %f,%f and %f,%f", x1, y1, x2, y2, x3, y3)
 		return
 	}
@@ -299,7 +301,7 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *VNode) {
 	arc2.AddEvent(event)
 	event.Node = arc2
 
-	log.Printf("Added circle with center %d,%d an r=%d\r\n", x, y, r)
+	log.Printf("Added circle with center %d,%d, r=%d and bottom Y=%d\r\n", x, y, r, bottomY)
 }
 
 func (v *Voronoi) handleCircleEvent(event *Event) {
