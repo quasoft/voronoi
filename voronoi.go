@@ -272,7 +272,7 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *VNode) {
 
 	event := &Event{
 		EventType: EventCircle,
-		X:         arc2.Site.X,
+		X:         x,
 		Y:         bottomY,
 		Radius:    r,
 	}
