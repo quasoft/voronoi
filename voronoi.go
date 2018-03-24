@@ -226,10 +226,8 @@ func (v *Voronoi) calcCircle(site1, site2, site3 Site) (x int, y int, r int, err
 
 	// If circle is oriented clockwise (there is a circle, but the sites are in reverse order),
 	// then ignore this circle.
-	// Code from: https://github.com/gorhill/Javascript-Voronoi/blob/master/rhill-voronoi-core.js
+	// Code for that part adapted from: https://github.com/gorhill/Javascript-Voronoi/blob/master/rhill-voronoi-core.js
 	// Explanation at https://en.wikipedia.org/wiki/Curve_orientation#Orientation_of_a_simple_polygon
-	//d := 2 * ((x1-x2)*(y3-y2) - (y1-y2)*(x3-x2))
-	//if d >= -2e-12 {
 	determinant := (x2*y3 + x1*y2 + y1*x3) - (y1*x2 + y2*x3 + x1*y3)
 	if determinant < 0 {
 		log.Printf("Sites are in reversed order, so circle would be clockwise")
