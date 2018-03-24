@@ -16,7 +16,7 @@ const (
 
 // Event represents a site or circle event.
 type Event struct {
-	site Site
+	Site Site
 	// The index is needed by update and is maintained by the heap.Interface methods.
 	index     int // The index of the event in the heap.
 	EventType EventType

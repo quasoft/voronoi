@@ -56,8 +56,8 @@ func GetParabolaABC(focus Site, yOfDirectrix int) (float64, float64, float64) {
 
 // GetXOfIntersection returns the x of the intersection of two parabola arcs.
 func GetXOfIntersection(node *VNode, sweepLine int) int {
-	left := node.PrevArc()
-	right := node.NextArc()
+	left := node.PrevChildArc()
+	right := node.NextChildArc()
 
 	leftFocus := left.Site
 	rightFocus := right.Site

@@ -45,8 +45,8 @@ func (n *VNode) IsLeaf() bool {
 	return n.Left == nil && n.Right == nil
 }
 
-// PrevArc returns the node for the previous arc.
-func (n *VNode) PrevArc() *VNode {
+// PrevChildArc returns the node for the previous arc.
+func (n *VNode) PrevChildArc() *VNode {
 	left := n.Left
 	for !left.IsLeaf() {
 		left = left.Right
@@ -54,11 +54,74 @@ func (n *VNode) PrevArc() *VNode {
 	return left
 }
 
-// NextArc returns the node for the next arc.
-func (n *VNode) NextArc() *VNode {
+// NextChildArc returns the node for the next arc.
+func (n *VNode) NextChildArc() *VNode {
 	right := n.Right
 	for !right.IsLeaf() {
 		right = right.Left
 	}
 	return right
+}
+
+// PrevArc returns the node for the previous arc.
+func (n *VNode) PrevArc() *VNode {
+	// If an internal node, traverse down
+	if !n.IsLeaf() {
+		return n.PrevChildArc()
+	}
+
+	// If a leaf, traverse up
+	if n.Parent == nil {
+		return nil
+	}
+
+	parent := n.Parent
+	node := n
+	for parent.Left == node {
+		if parent.Parent == nil {
+			return nil
+		}
+		node = parent
+		parent = parent.Parent
+	}
+
+	if parent.Left.IsLeaf() {
+		return parent.Left
+	}
+
+	return parent.Left.NextChildArc()
+}
+
+// NextArc returns the node for the next arc.
+func (n *VNode) NextArc() *VNode {
+	// If an internal node, traverse down
+	if !n.IsLeaf() {
+		return n.NextChildArc()
+	}
+
+	// If a leaf, traverse up
+	if n.Parent == nil {
+		return nil
+	}
+
+	parent := n.Parent
+	node := n
+	for parent.Right == node {
+		if parent.Parent == nil {
+			return nil
+		}
+		node = parent
+		parent = parent.Parent
+	}
+
+	if parent.Right.IsLeaf() {
+		return parent.Right
+	}
+
+	return parent.Right.NextChildArc()
+}
+
+// AddEvent pushes a pointer to an event in the Events list of the node.
+func (n *VNode) AddEvent(event *Event) {
+	n.Events = append(n.Events, event)
 }

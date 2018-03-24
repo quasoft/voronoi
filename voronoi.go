@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"math"
 )
 
 // RVertex repsesent a vertex on the resulting voronoi diagram.
@@ -66,7 +67,7 @@ func (v *Voronoi) HandleNextEvent() {
 	if v.EventQueue.Len() > 0 {
 		// Process events by Y (priority)
 		event := heap.Pop(&v.EventQueue).(*Event)
-		v.SweepLine = event.site.Y
+		v.SweepLine = event.Site.Y
 		if event.EventType == EventSite {
 			v.handleSiteEvent(event)
 		} else {
@@ -94,8 +95,8 @@ func (v *Voronoi) findNodeAbove(site Site) *VNode {
 		} else {
 			log.Printf(
 				"At internal node %d,%d <-> %d,%d\r\n",
-				node.PrevArc().Site.X, node.PrevArc().Site.Y,
-				node.NextArc().Site.X, node.NextArc().Site.Y,
+				node.PrevChildArc().Site.X, node.PrevChildArc().Site.Y,
+				node.NextChildArc().Site.X, node.NextChildArc().Site.Y,
 			)
 		}
 
@@ -117,12 +118,12 @@ func (v *Voronoi) findNodeAbove(site Site) *VNode {
 
 func (v *Voronoi) handleSiteEvent(event *Event) {
 	log.Println()
-	log.Printf("Handling event %d:%d of type %d\r\n", event.site.X, event.site.Y, event.EventType)
+	log.Printf("Handling event %d:%d of type %d\r\n", event.Site.X, event.Site.Y, event.EventType)
 	log.Printf("Sweep line: %d", v.SweepLine)
 	log.Printf("Tree: %v", v.ParabolaTree)
 
 	// Event with Y above the sweep line should be ignored
-	if event.site.Y < v.SweepLine {
+	if event.Site.Y < v.SweepLine {
 		log.Printf("Ignoring event as it's above the sweep line (%d)\r\n", v.SweepLine)
 		return
 	}
@@ -130,12 +131,12 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	// If the binary tree is empty, just add an arc for this site as the only leaf in the tree
 	if v.ParabolaTree == nil {
 		log.Print("Adding event as root\r\n")
-		v.ParabolaTree = &VNode{Site: event.site}
+		v.ParabolaTree = &VNode{Site: event.Site}
 		return
 	}
 
 	// If the tree is not empty, find the arc vertically above the new site
-	arcAbove := v.findNodeAbove(event.site)
+	arcAbove := v.findNodeAbove(event.Site)
 	if arcAbove == nil {
 		log.Print("Could not find arc above event site!\r\n")
 		// Do something
@@ -153,8 +154,8 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 		arcAbove.Events = nil
 	}
 
-	y := GetYByX(arcAbove.Site, event.site.X, v.SweepLine)
-	point := RVertex{event.site.X, y}
+	y := GetYByX(arcAbove.Site, event.Site.X, v.SweepLine)
+	point := RVertex{event.Site.X, y}
 	log.Printf("Y of intersection = %d:%d\r\n", point.X, point.Y)
 	v.Result = append(v.Result, point)
 
@@ -165,20 +166,60 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	//  (  )  [old]
 	// /    \
 	//[old]  [new]
-	arcAbove.Right = &VNode{Site: arcAbove.Site, Events: arcAbove.Events}     // Copy of the old arc
-	arcAbove.Left = &VNode{}                                                  // Internal node
-	arcAbove.Left.Left = &VNode{Site: arcAbove.Site, Events: arcAbove.Events} // Copy of the old arc
-	arcAbove.Left.Right = &VNode{Site: event.site}                            // The new arc
+
+	// Copy of the old arc
+	arcAbove.Right = &VNode{
+		Site:   arcAbove.Site,
+		Events: arcAbove.Events,
+		Parent: arcAbove,
+	}
+
+	// Internal node
+	arcAbove.Left = &VNode{Parent: arcAbove}
+
+	// The new arc
+	arcAbove.Left.Right = &VNode{
+		Site:   event.Site,
+		Parent: arcAbove.Left,
+	}
+	newArc := arcAbove.Left.Right
+
+	// Copy of the old arc
+	arcAbove.Left.Left = &VNode{
+		Site:   arcAbove.Site,
+		Events: arcAbove.Events,
+		Parent: arcAbove.Left,
+	}
+
 	arcAbove.Site.X = 0
 	arcAbove.Site.Y = 0
 	arcAbove.Events = nil
 
-	//addCircleEvent()
+	// Check for circle events where the new arc is the right most arc
+	prevArc := newArc.PrevArc()
+	log.Printf("Prev arc for %v is %v\r\n", newArc, prevArc)
+	if prevArc != nil {
+		prevPrevArc := prevArc.PrevArc()
+		log.Printf("Prev->prev arc for %v is %v\r\n", newArc, prevPrevArc)
+		if prevPrevArc != nil {
+			v.addCircleEvent(prevPrevArc.Site, prevArc.Site, newArc.Site)
+		}
+	}
+
+	// Check for circle events where the new arc is the left most arc
+	nextArc := newArc.NextArc()
+	if nextArc != nil {
+		nextNextArc := nextArc.NextArc()
+		if nextNextArc != nil {
+			v.addCircleEvent(newArc.Site, nextArc.Site, nextNextArc.Site)
+		}
+	}
 }
 
-func (v *Voronoi) calcCircleCenter(site1, site2, site3 Site) (cx int, cy int, err error) {
-	cx = 0
-	cy = 0
+func (v *Voronoi) calcCircle(site1, site2, site3 Site) (x int, y int, r int, err error) {
+	x = 0
+	y = 0
+	r = 0
 	err = nil
 
 	x1 := float64(site1.X)
@@ -190,35 +231,46 @@ func (v *Voronoi) calcCircleCenter(site1, site2, site3 Site) (cx int, cy int, er
 	x3 := float64(site3.X)
 	y3 := float64(site3.Y)
 
-	mr := (y2 - y1) / (x2 - x1)
-	mt := (y3 - y2) / (x3 - x2)
-
-	if mr == mt {
+	if x2-x1 == 0 || x3-x2 == 0 {
 		err = fmt.Errorf("no circle found connecting points %f,%f %f,%f and %f,%f", x1, y1, x2, y2, x3, y3)
 		return
 	}
 
-	x := (mr*mt*(y3-y1) + mr*(x2+x3) - mt*(x1+x2)) / (2 * (mr - mt))
-	y := (y1+y2)/2 - (x-(x1+x2)/2)/mr
-	cx = int(x + 0.5)
-	cy = int(y + 0.5)
-	//r := math.Pow((math.Pow((x2-x), 2) + math.Pow((y2-y), 2)), 0.5)
+	mr := (y2 - y1) / (x2 - x1)
+	mt := (y3 - y2) / (x3 - x2)
+
+	if mr == mt || mr-mt == 0 || mr == 0 {
+		err = fmt.Errorf("no circle found connecting points %f,%f %f,%f and %f,%f", x1, y1, x2, y2, x3, y3)
+		return
+	}
+
+	cx := (mr*mt*(y3-y1) + mr*(x2+x3) - mt*(x1+x2)) / (2 * (mr - mt))
+	cy := (y1+y2)/2 - (cx-(x1+x2)/2)/mr
+	cr := math.Pow((math.Pow((x2-cx), 2) + math.Pow((y2-cy), 2)), 0.5)
+
+	x = int(cx + 0.5)
+	y = int(cy + 0.5)
+	r = int(cr + 0.5)
+
 	return
 }
 
-func (v *Voronoi) addCircleEvent(site1, site2, site3 Site) {
-	x, y, err := v.calcCircleCenter(site1, site2, site3)
+func (v *Voronoi) addCircleEvent(node *VNode, site1, site2, site3 Site) {
+	log.Printf("Checking for circle at <%v> <%v> <%v>\r\n", site1, site2, site3)
+	x, y, r, err := v.calcCircle(site1, site2, site3)
 	if err != nil {
 		return
 	}
 
-	log.Printf(
-		"Found circle with center %d,%d for sites <%d:%d> <%d:%d> <%d:%d>\r\n",
-		x, y,
-		site1.X, site1.Y,
-		site2.X, site2.Y,
-		site3.X, site3.Y,
-	)
+	log.Printf("Found circle with center %d,%d for sites <%v> <%v> <%v>\r\n", x, y, site1, site2, site3)
+	tangentY := y + r
+
+	event := &Event{
+		EventType: EventCircle,
+		Site:      Site{site2.X, tangentY},
+	}
+	v.EventQueue.Push(event)
+	node.AddEvent(event)
 }
 
 func (v *Voronoi) handleCircleEvent(event *Event) {
