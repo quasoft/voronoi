@@ -1,4 +1,4 @@
-package goalgorithms
+package voronoi
 
 import (
 	"container/heap"

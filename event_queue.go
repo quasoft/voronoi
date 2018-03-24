@@ -1,4 +1,4 @@
-package goalgorithms
+package voronoi
 
 // Priority queue adapted from the examples of the container/heap package.
 

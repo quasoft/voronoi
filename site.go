@@ -1,4 +1,4 @@
-package goalgorithms
+package voronoi
 
 // Site is a prerequisute for computing a voronoi diagram.
 // Site is the point (also called seed or generator) in a voronoi diagram,

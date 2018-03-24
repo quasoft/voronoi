@@ -12,7 +12,7 @@ import (
 	"log"
 	"net/http"
 
-	voronoi "github.com/quasoft/goalgorithms/voronoi"
+	"github.com/quasoft/voronoi"
 )
 
 // D3Node is the data required to draw a node with D3.js library.
