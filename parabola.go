@@ -88,32 +88,6 @@ func GetXOfIntersection(node *VNode, sweepLine int) int {
 	return int(x)
 }
 
-func GetXByY(focus Site, y int, sweepLine int) int {
-	yf := float64(y)
-	a, b, c := GetParabolaABC(focus, sweepLine)
-	c -= yf
-
-	discriminant := math.Pow(b, 2) - 4*a*c
-	root1 := (-b + math.Sqrt(discriminant)) / (2 * a)
-	root2 := (-b - math.Sqrt(discriminant)) / (2 * a)
-
-	// X of the intersection is one of those roots.
-	var x float64
-	if focus.Y < focus.Y {
-		x = math.Min(root1, root2)
-	} else {
-		x = math.Max(root1, root2)
-	}
-
-	if math.IsNaN(x) {
-		x = float64(focus.X)
-	}
-
-	log.Printf("focus: %v:%v, y=%v, sweep line=%v \r\n", focus.X, focus.Y, yf, sweepLine)
-	log.Printf("a=%v, b=%v, c=%v, x=%v \r\n", a, b, c, x)
-	return int(x)
-}
-
 func GetYByX(focus Site, x int, sweepLine int) int {
 	xf := float64(x)
 	a, b, c := GetParabolaABC(focus, sweepLine)
