@@ -147,17 +147,7 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	}
 	log.Printf("Arc above: %d:%d\r\n", arcAbove.Site.X, arcAbove.Site.Y)
 
-	if len(arcAbove.Events) > 0 {
-		log.Printf("Removing %d events from queue.\r\n", len(arcAbove.Events))
-
-		// Remove false circle events from queue
-		for _, e := range arcAbove.Events {
-			if e.index > -1 {
-				v.EventQueue.Remove(e)
-			}
-		}
-		arcAbove.Events = nil
-	}
+	v.removeCircleEvent(arcAbove)
 
 	y := GetYByX(arcAbove.Site, eventSite.X, v.SweepLine)
 	point := RVertex{eventSite.X, y}
