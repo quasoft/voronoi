@@ -121,6 +121,32 @@ func (n *Node) NextArc() *Node {
 	return parent.Right.NextChildArc()
 }
 
+// FirstArc returns the  left-most arc (leaf) in the tree.
+func (n *Node) FirstArc() *Node {
+	first := n
+	for first != nil && !first.IsLeaf() {
+		if first.Left != nil {
+			first = first.Left
+		} else {
+			first = first.Right
+		}
+	}
+	return first
+}
+
+// LastArc returns the right-most arc (leaf) in the tree.
+func (n *Node) LastArc() *Node {
+	last := n
+	for last != nil && !last.IsLeaf() {
+		if last.Right != nil {
+			last = last.Right
+		} else {
+			last = last.Left
+		}
+	}
+	return last
+}
+
 // AddEvent pushes a pointer to an event in the Events list of the node.
 func (n *Node) AddEvent(event *Event) {
 	n.Events = append(n.Events, event)
