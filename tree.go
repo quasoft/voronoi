@@ -67,7 +67,7 @@ func (n *Node) NextChildArc() *Node {
 func (n *Node) PrevArc() *Node {
 	// If an internal node, traverse down
 	if !n.IsLeaf() {
-		return n.PrevChildArc()
+		return n.LastArc()
 	}
 
 	// If a leaf, traverse up
@@ -89,14 +89,14 @@ func (n *Node) PrevArc() *Node {
 		return parent.Left
 	}
 
-	return parent.Left.NextChildArc()
+	return parent.Left.LastArc()
 }
 
 // NextArc returns the node for the next arc.
 func (n *Node) NextArc() *Node {
 	// If an internal node, traverse down
 	if !n.IsLeaf() {
-		return n.NextChildArc()
+		return n.FirstArc()
 	}
 
 	// If a leaf, traverse up
@@ -118,7 +118,7 @@ func (n *Node) NextArc() *Node {
 		return parent.Right
 	}
 
-	return parent.Right.NextChildArc()
+	return parent.Right.FirstArc()
 }
 
 // FirstArc returns the  left-most arc (leaf) in the tree.
