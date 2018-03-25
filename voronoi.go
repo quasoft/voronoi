@@ -200,18 +200,14 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	// Check for circle events where the new arc is the right most arc
 	prevArc := newArc.PrevArc()
 	log.Printf("Prev arc for %v is %v\r\n", newArc, prevArc)
-	if prevArc != nil {
-		prevPrevArc := prevArc.PrevArc()
-		log.Printf("Prev->prev arc for %v is %v\r\n", newArc, prevPrevArc)
-		v.addCircleEvent(prevPrevArc, prevArc, newArc)
-	}
+	prevPrevArc := prevArc.PrevArc()
+	log.Printf("Prev->prev arc for %v is %v\r\n", newArc, prevPrevArc)
+	v.addCircleEvent(prevPrevArc, prevArc, newArc)
 
 	// Check for circle events where the new arc is the left most arc
 	nextArc := newArc.NextArc()
-	if nextArc != nil {
-		nextNextArc := nextArc.NextArc()
-		v.addCircleEvent(newArc, nextArc, nextNextArc)
-	}
+	nextNextArc := nextArc.NextArc()
+	v.addCircleEvent(newArc, nextArc, nextNextArc)
 }
 
 // calcCircle checks if the circle passing through three sites is counter-clockwise,

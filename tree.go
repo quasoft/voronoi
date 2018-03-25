@@ -65,6 +65,10 @@ func (n *Node) NextChildArc() *Node {
 
 // PrevArc returns the node for the previous arc.
 func (n *Node) PrevArc() *Node {
+	if n == nil {
+		return nil
+	}
+
 	// If an internal node, traverse down
 	if !n.IsLeaf() {
 		return n.LastArc()
@@ -94,6 +98,10 @@ func (n *Node) PrevArc() *Node {
 
 // NextArc returns the node for the next arc.
 func (n *Node) NextArc() *Node {
+	if n == nil {
+		return nil
+	}
+
 	// If an internal node, traverse down
 	if !n.IsLeaf() {
 		return n.FirstArc()
