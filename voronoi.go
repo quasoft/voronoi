@@ -105,18 +105,14 @@ func (v *Voronoi) findNodeAbove(site Site) *Node {
 
 	for !node.IsLeaf() {
 		if node.IsLeaf() {
-			log.Printf("At leaf %d,%d\r\n", node.Site.X, node.Site.Y)
+			log.Printf("At leaf %v\r\n", node)
 		} else {
-			log.Printf(
-				"At internal node %d,%d <-> %d,%d\r\n",
-				node.PrevChildArc().Site.X, node.PrevChildArc().Site.Y,
-				node.NextChildArc().Site.X, node.NextChildArc().Site.Y,
-			)
+			log.Printf("At internal node %v <-> %v\r\n", node.PrevChildArc(), node.NextChildArc())
 		}
 
 		x, err := GetXOfInternalNode(node, v.SweepLine)
 		if err != nil {
-			panic(fmt.Errorf("could not find arc above %d - this should never happen", node.Site.X))
+			panic(fmt.Errorf("could not find arc above %v - this should never happen", node))
 		}
 		if site.X < x {
 			log.Printf("site.X (%d) < x (%d), going left\r\n", site.X, x)
@@ -135,7 +131,7 @@ func (v *Voronoi) findNodeAbove(site Site) *Node {
 
 func (v *Voronoi) handleSiteEvent(event *Event) {
 	log.Println()
-	log.Printf("Handling site event %d:%d\r\n", event.X, event.Y)
+	log.Printf("Handling site event %d,%d\r\n", event.X, event.Y)
 	log.Printf("Sweep line: %d", v.SweepLine)
 	log.Printf("Tree: %v", v.ParabolaTree)
 
@@ -155,13 +151,13 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 		// Do something
 		return
 	}
-	log.Printf("Arc above: %d:%d\r\n", arcAbove.Site.X, arcAbove.Site.Y)
+	log.Printf("Arc above: %v\r\n", arcAbove)
 
 	v.removeCircleEvent(arcAbove)
 
 	y := GetYByX(arcAbove.Site, eventSite.X, v.SweepLine)
 	point := RVertex{eventSite.X, y}
-	log.Printf("Y of intersection = %d:%d\r\n", point.X, point.Y)
+	log.Printf("Y of intersection = %d,%d\r\n", point.X, point.Y)
 	v.Result = append(v.Result, point)
 
 	// The node above (NA) is replaced wit ha branch with one internal node and three leafs.
@@ -276,7 +272,7 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *Node) {
 		return
 	}
 
-	log.Printf("Checking for circle at <%v> <%v> <%v>\r\n", arc1.Site, arc2.Site, arc3.Site)
+	log.Printf("Checking for circle at %v %v %v\r\n", arc1, arc2, arc3)
 	x, y, r, err := v.calcCircle(arc1.Site, arc2.Site, arc3.Site)
 	if err != nil {
 		return
@@ -304,7 +300,7 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *Node) {
 
 func (v *Voronoi) handleCircleEvent(event *Event) {
 	log.Println()
-	log.Printf("Handling circle event %d:%d with radius %d\r\n", event.X, event.Y, event.Radius)
+	log.Printf("Handling circle event %d,%d with radius %d\r\n", event.X, event.Y, event.Radius)
 	log.Printf("Sweep line: %d", v.SweepLine)
 	log.Printf("Tree: %v", v.ParabolaTree)
 
@@ -325,7 +321,7 @@ func (v *Voronoi) handleCircleEvent(event *Event) {
 
 	// Add center of circle as vertex
 	point := RVertex{event.X, event.Y - event.Radius}
-	log.Printf("Vertex at %d:%d (center of circle)\r\n", point.X, point.Y)
+	log.Printf("Vertex at %d,%d (center of circle)\r\n", point.X, point.Y)
 	v.Result = append(v.Result, point)
 
 	return

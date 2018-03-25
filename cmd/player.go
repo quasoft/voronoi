@@ -36,7 +36,7 @@ func btreeToGraphNode(node *voronoi.Node) *D3Node {
 	if site.X == 0 && site.Y == 0 {
 		label = "Internal"
 	} else {
-		label = fmt.Sprintf("Site %d:%d", site.X, site.Y)
+		label = fmt.Sprintf("Site %v", site)
 	}
 
 	var children []D3Node

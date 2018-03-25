@@ -6,30 +6,6 @@ import (
 	"math"
 )
 
-// Arc represents an arc of a parabola (part of parabola), that lies on the beach line.
-// Stores the site that created the arc, pointers to the circle events associated with it.
-type Arc struct {
-	// site is the focus of the parabola arc (the site which created this parabola)
-	Site Site
-	// events holds pointers to all circle events, in which this arc participates
-	Events []*Event
-}
-
-func (a Arc) String() string {
-	return fmt.Sprintf("%d:%d", a.Site.X, a.Site.Y)
-}
-
-// NewArc creates a new parabola arc for the given site
-func NewArc(site Site) *Arc {
-	return &Arc{Site: site}
-}
-
-// Less compares two nodes (a breakpoint or an arc) by the X value of the associated site.
-// Not used in voronoi generator. Implemented just to fullfill ValueInterface.
-func (a Arc) Less(value interface{}) bool {
-	return a.Site.X < value.(Arc).Site.X
-}
-
 // GetParabolaABC returns the a, b and c coefficients of the standard form of
 // a parabola equation, given only x and y of the focus and y of the directrix.
 // Math behind this is explained at https://math.stackexchange.com/q/2700061/543428.

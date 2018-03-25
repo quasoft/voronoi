@@ -1,5 +1,7 @@
 package voronoi
 
+import "fmt"
+
 // Site is a prerequisute for computing a voronoi diagram.
 // Site is the point (also called seed or generator) in a voronoi diagram,
 // around which a cell (subset of the plane) is formed, with such a property
@@ -7,6 +9,8 @@ package voronoi
 type Site struct {
 	X, Y int
 }
+
+func (s Site) String() string { return fmt.Sprintf("%d,%d", s.X, s.Y) }
 
 // SiteSlice is a slice of Site values, sortable by Y
 type SiteSlice []Site

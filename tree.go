@@ -32,10 +32,19 @@ func (n *Node) String() string {
 	if n.Left != nil {
 		s += n.Left.String() + " "
 	}
-	s += fmt.Sprint(n.Site)
+
+	if n.IsLeaf() {
+		s += "[" + fmt.Sprint(n.Site) + "]"
+	} else if n.Parent == nil {
+		s += "<root>"
+	} else {
+		s += "<int>" // internal
+	}
+
 	if n.Right != nil {
 		s += " " + n.Right.String()
 	}
+
 	return "(" + s + ")"
 }
 

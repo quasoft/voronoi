@@ -131,11 +131,6 @@ func (p *Plotter) BeachLine(tree *Node) {
 
 	// Draw parabola arcs with solid color
 	first = tree.FirstArc()
-	if first != nil {
-		fmt.Printf("First: %v\r\n", first.Site)
-	} else {
-		fmt.Print("First: nil\r\n")
-	}
 	lastX = 0
 	for first != nil {
 		// Get parabola coefficients
@@ -160,15 +155,8 @@ func (p *Plotter) BeachLine(tree *Node) {
 		}
 		lastX = x
 
-		if next != nil {
-			fmt.Printf("Next: %v\r\n", next.Site)
-		} else {
-			fmt.Print("Next: nil\r\n")
-		}
-
 		first = next
 	}
-	fmt.Print("Over\r\n")
 }
 
 // Plot paints the voronoi diagram over the given image.
