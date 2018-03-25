@@ -114,7 +114,10 @@ func (v *Voronoi) findNodeAbove(site Site) *Node {
 			)
 		}
 
-		x := GetXOfIntersection(node, v.SweepLine)
+		x, err := GetXOfInternalNode(node, v.SweepLine)
+		if err != nil {
+			panic(fmt.Errorf("could not find arc above %d - this should never happen", node.Site.X))
+		}
 		if site.X < x {
 			log.Printf("site.X (%d) < x (%d), going left\r\n", site.X, x)
 			node = node.Left

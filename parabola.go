@@ -54,11 +54,16 @@ func GetParabolaABC(focus Site, yOfDirectrix int) (float64, float64, float64) {
 	return a, b, c
 }
 
-// GetXOfIntersection returns the x of the intersection of two parabola arcs.
-func GetXOfIntersection(node *Node, directrix int) int {
+// GetXOfInternalNode returns the x of the intersection of the two parabola arcs below an internal node.
+func GetXOfInternalNode(node *Node, directrix int) (int, error) {
 	left := node.PrevChildArc()
 	right := node.NextChildArc()
 
+	return GetXOfIntersection(left, right, directrix)
+}
+
+// GetXOfIntersection returns the x of the intersection of two parabola arcs.
+func GetXOfIntersection(left *Node, right *Node, directrix int) (int, error) {
 	leftFocus := left.Site
 	rightFocus := right.Site
 
@@ -83,9 +88,12 @@ func GetXOfIntersection(node *Node, directrix int) int {
 		x = math.Max(root1, root2)
 	}
 
-	log.Printf("X of S(%d,%d) and S(%d,%d) = %v\r\n", leftFocus.X, leftFocus.Y, rightFocus.X, rightFocus.Y, x)
+	log.Printf("X of %v and %v = %v\r\n", leftFocus, rightFocus, x)
+	if math.IsNaN(x) {
+		return 0, fmt.Errorf("there is no intersection between S(%v) and S(%v)", leftFocus, rightFocus)
+	}
 
-	return int(x)
+	return int(x), nil
 }
 
 // GetYByX calculates the Y value for the parabola with the given focus and directrix (the sweep line)
