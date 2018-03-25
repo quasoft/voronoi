@@ -48,8 +48,8 @@ var colors = []color.Color{
 	color.RGBA{0xee, 0x82, 0xee, 0xff},
 }
 
-// Drawing draws the result of the voronoi diagram generator into an image.
-type Drawing struct {
+// Plotter draws the result of the voronoi diagram generator into an image.
+type Plotter struct {
 	voronoi         *Voronoi
 	dst             *image.RGBA
 	ctx             *draw.Context
@@ -57,9 +57,9 @@ type Drawing struct {
 	VertexColor     color.RGBA
 }
 
-// NewDrawing creates a new voronoi diagram drawer.
-func NewDrawing(voronoi *Voronoi, dst *image.RGBA) *Drawing {
-	return &Drawing{
+// NewPlotter creates a new voronoi diagram drawer.
+func NewPlotter(voronoi *Voronoi, dst *image.RGBA) *Plotter {
+	return &Plotter{
 		voronoi,
 		dst,
 		draw.NewContext(dst),
@@ -69,62 +69,62 @@ func NewDrawing(voronoi *Voronoi, dst *image.RGBA) *Drawing {
 }
 
 // Min returns the minimum point on the diagram.
-func (d *Drawing) Min() image.Point {
-	return d.dst.Bounds().Min
+func (p *Plotter) Min() image.Point {
+	return p.dst.Bounds().Min
 }
 
 // Max returns the maximum point on the diagram.
-func (d *Drawing) Max() image.Point {
-	return d.dst.Bounds().Max
+func (p *Plotter) Max() image.Point {
+	return p.dst.Bounds().Max
 }
 
 // SweepLine draws a sweep line with the given Y.
-func (d *Drawing) SweepLine(y int) {
-	d.ctx.SetPen(color.Black)
-	d.ctx.Line(0, y, d.Max().X-1, y)
+func (p *Plotter) SweepLine(y int) {
+	p.ctx.SetPen(color.Black)
+	p.ctx.Line(0, y, p.Max().X-1, y)
 }
 
 // Site draws the specified site with the given color.
-func (d *Drawing) Site(site Site, clr color.Color) {
-	d.ctx.SetPen(clr)
+func (p *Plotter) Site(site Site, clr color.Color) {
+	p.ctx.SetPen(clr)
 
-	d.ctx.Cross(site.X, site.Y, 2)
+	p.ctx.Cross(site.X, site.Y, 2)
 }
 
 // Vertex draws the specified vertex.
-func (d *Drawing) Vertex(vertex RVertex) {
-	d.ctx.SetPen(d.VertexColor)
-	d.ctx.Cross(vertex.X, vertex.Y, 2)
+func (p *Plotter) Vertex(vertex RVertex) {
+	p.ctx.SetPen(p.VertexColor)
+	p.ctx.Cross(vertex.X, vertex.Y, 2)
 }
 
-func (d *Drawing) colorOfSite(site Site) color.Color {
+func (p *Plotter) colorOfSite(site Site) color.Color {
 	siteIdx := 0
-	for i, s := range d.voronoi.Sites {
+	for i, s := range p.voronoi.Sites {
 		if site == s {
 			siteIdx = i
 			break
 		}
 	}
-	return d.colorOfSiteIdx(siteIdx)
+	return p.colorOfSiteIdx(siteIdx)
 }
 
-func (d *Drawing) colorOfSiteIdx(index int) color.Color {
+func (p *Plotter) colorOfSiteIdx(index int) color.Color {
 	return colors[index%len(colors)]
 }
 
 // BeachLine draws the sequence of parabola arcs.
-func (d *Drawing) BeachLine(tree *Node) {
+func (p *Plotter) BeachLine(tree *Node) {
 	// Draw full parabolas with semi-transparent color
 	first := tree.FirstArc()
 	lastX := 0
 	for first != nil {
 		// Get parabola coefficients
-		a, b, c := GetParabolaABC(first.Site, d.voronoi.SweepLine)
+		a, b, c := GetParabolaABC(first.Site, p.voronoi.SweepLine)
 
-		cr, cg, cb, _ := d.colorOfSite(first.Site).RGBA()
+		cr, cg, cb, _ := p.colorOfSite(first.Site).RGBA()
 		stclr := color.RGBA{uint8(cr), uint8(cg), uint8(cb), 75}
-		d.ctx.SetPen(stclr)
-		d.ctx.Parabola(a, b, c)
+		p.ctx.SetPen(stclr)
+		p.ctx.Parabola(a, b, c)
 
 		first = first.NextArc()
 	}
@@ -139,24 +139,24 @@ func (d *Drawing) BeachLine(tree *Node) {
 	lastX = 0
 	for first != nil {
 		// Get parabola coefficients
-		a, b, c := GetParabolaABC(first.Site, d.voronoi.SweepLine)
+		a, b, c := GetParabolaABC(first.Site, p.voronoi.SweepLine)
 
-		clr := d.colorOfSite(first.Site)
-		d.ctx.SetPen(clr)
+		clr := p.colorOfSite(first.Site)
+		p.ctx.SetPen(clr)
 
-		x := d.dst.Bounds().Max.X
+		x := p.dst.Bounds().Max.X
 		next := first.NextArc()
 		if next != nil {
-			intX, err := GetXOfIntersection(first, next, d.voronoi.SweepLine)
+			intX, err := GetXOfIntersection(first, next, p.voronoi.SweepLine)
 			if err == nil {
 				x = intX
 			}
 		}
 
-		if first.Site.Y == d.voronoi.SweepLine {
-			d.ctx.Line(first.Site.X, 0, first.Site.X, first.Site.Y)
+		if first.Site.Y == p.voronoi.SweepLine {
+			p.ctx.Line(first.Site.X, 0, first.Site.X, first.Site.Y)
 		} else {
-			d.ctx.ParabolaArc(a, b, c, lastX, x)
+			p.ctx.ParabolaArc(a, b, c, lastX, x)
 		}
 		lastX = x
 
@@ -172,41 +172,41 @@ func (d *Drawing) BeachLine(tree *Node) {
 }
 
 // Plot paints the voronoi diagram over the given image.
-func (d *Drawing) Plot() {
+func (p *Plotter) Plot() {
 	// Draw border and fill with background color
-	d.ctx.SetPen(color.Black)
-	d.ctx.SetFill(color.White)
-	d.ctx.Rect(0, 0, d.Max().X-1, d.Max().Y-1)
+	p.ctx.SetPen(color.Black)
+	p.ctx.SetFill(color.White)
+	p.ctx.Rect(0, 0, p.Max().X-1, p.Max().Y-1)
 
 	// Draw beach line
-	d.BeachLine(d.voronoi.ParabolaTree)
+	p.BeachLine(p.voronoi.ParabolaTree)
 
 	// Draw sites and their labels
-	for i, site := range d.voronoi.Sites {
-		clr := d.colorOfSiteIdx(i)
+	for i, site := range p.voronoi.Sites {
+		clr := p.colorOfSiteIdx(i)
 
-		d.Site(site, clr)
+		p.Site(site, clr)
 		label := fmt.Sprintf("Site %d/%d", site.X, site.Y)
-		d.ctx.SetTextColor(clr)
-		d.ctx.Text(site.X-40, site.Y+15, label)
+		p.ctx.SetTextColor(clr)
+		p.ctx.Text(site.X-40, site.Y+15, label)
 	}
 
 	// Draw verteces
-	for _, vertex := range d.voronoi.Result {
-		d.Vertex(vertex)
+	for _, vertex := range p.voronoi.Result {
+		p.Vertex(vertex)
 	}
 
 	// Draw sweep line with label
-	d.SweepLine(d.voronoi.SweepLine)
-	label := fmt.Sprintf("Sweep line = %d", d.voronoi.SweepLine)
-	d.ctx.SetTextColor(color.Black)
-	d.ctx.Text(d.Max().X-150, d.voronoi.SweepLine+15, label)
+	p.SweepLine(p.voronoi.SweepLine)
+	label := fmt.Sprintf("Sweep line = %d", p.voronoi.SweepLine)
+	p.ctx.SetTextColor(color.Black)
+	p.ctx.Text(p.Max().X-150, p.voronoi.SweepLine+15, label)
 }
 
 // Plot creates an image and paints a voronoi diagram over it.
 func Plot(voronoi *Voronoi) *image.RGBA {
 	img := image.NewRGBA(voronoi.Bounds)
-	drawer := NewDrawing(voronoi, img)
+	drawer := NewPlotter(voronoi, img)
 	drawer.Plot()
 	return img
 }
