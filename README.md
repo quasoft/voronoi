@@ -4,6 +4,10 @@ Golang package for generation of voronoi diagrams with Fortune's algorithm.
 
 *Work in progress. Calculates verticies, but is not yet building a full DCEL data structure with the results.*
 
+## TODO:
+- Store results in a DCEL data structure.
+- Draw only the parts of the parabola that affect forming of edges
+
 ## How to debug
 
 ```go
