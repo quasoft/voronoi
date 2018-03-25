@@ -144,7 +144,7 @@ func (p *Plotter) BeachLine(tree *Node) {
 		clr := p.colorOfSite(first.Site)
 		p.ctx.SetPen(clr)
 
-		x := p.dst.Bounds().Max.X
+		x := p.Max().X
 		next := first.NextArc()
 		if next != nil {
 			intX, err := GetXOfIntersection(first, next, p.voronoi.SweepLine)
