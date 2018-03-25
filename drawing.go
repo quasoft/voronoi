@@ -104,6 +104,20 @@ func (d *Drawing) Vertex(vertex RVertex) {
 	d.ctx.Cross(vertex.X, vertex.Y, 2)
 }
 
+// BeachLine draws the sequence of parabola arcs.
+func (d *Drawing) BeachLine(node *Node) {
+	d.ctx.SetPen(clr)
+
+	d.ctx.Cross(site.X, site.Y, 2)
+
+	if site.Y == d.voronoi.SweepLine {
+		d.ctx.Line(site.X, 0, site.X, site.Y)
+	} else if site.Y < d.voronoi.SweepLine {
+		a, b, c := GetParabolaABC(site, d.voronoi.SweepLine)
+		d.ctx.Parabola(a, b, c)
+	}
+}
+
 // Plot paints the voronoi diagram over the given image.
 func (d *Drawing) Plot() {
 	// Draw border and fill with background color
