@@ -89,13 +89,6 @@ func (d *Drawing) Site(site Site, clr color.Color) {
 	d.ctx.SetPen(clr)
 
 	d.ctx.Cross(site.X, site.Y, 2)
-
-	if site.Y == d.voronoi.SweepLine {
-		d.ctx.Line(site.X, 0, site.X, site.Y)
-	} else if site.Y < d.voronoi.SweepLine {
-		a, b, c := GetParabolaABC(site, d.voronoi.SweepLine)
-		d.ctx.Parabola(a, b, c)
-	}
 }
 
 // Vertex draws the specified vertex.
@@ -104,18 +97,78 @@ func (d *Drawing) Vertex(vertex RVertex) {
 	d.ctx.Cross(vertex.X, vertex.Y, 2)
 }
 
-// BeachLine draws the sequence of parabola arcs.
-func (d *Drawing) BeachLine(node *Node) {
-	d.ctx.SetPen(clr)
-
-	d.ctx.Cross(site.X, site.Y, 2)
-
-	if site.Y == d.voronoi.SweepLine {
-		d.ctx.Line(site.X, 0, site.X, site.Y)
-	} else if site.Y < d.voronoi.SweepLine {
-		a, b, c := GetParabolaABC(site, d.voronoi.SweepLine)
-		d.ctx.Parabola(a, b, c)
+func (d *Drawing) colorOfSite(site Site) color.Color {
+	siteIdx := 0
+	for i, s := range d.voronoi.Sites {
+		if site == s {
+			siteIdx = i
+			break
+		}
 	}
+	return d.colorOfSiteIdx(siteIdx)
+}
+
+func (d *Drawing) colorOfSiteIdx(index int) color.Color {
+	return colors[index%len(colors)]
+}
+
+// BeachLine draws the sequence of parabola arcs.
+func (d *Drawing) BeachLine(tree *Node) {
+	// Draw full parabolas with semi-transparent color
+	first := tree.FirstArc()
+	lastX := 0
+	for first != nil {
+		// Get parabola coefficients
+		a, b, c := GetParabolaABC(first.Site, d.voronoi.SweepLine)
+
+		cr, cg, cb, _ := d.colorOfSite(first.Site).RGBA()
+		stclr := color.RGBA{uint8(cr), uint8(cg), uint8(cb), 75}
+		d.ctx.SetPen(stclr)
+		d.ctx.Parabola(a, b, c)
+
+		first = first.NextArc()
+	}
+
+	// Draw parabola arcs with solid color
+	first = tree.FirstArc()
+	if first != nil {
+		fmt.Printf("First: %v\r\n", first.Site)
+	} else {
+		fmt.Print("First: nil\r\n")
+	}
+	lastX = 0
+	for first != nil {
+		// Get parabola coefficients
+		a, b, c := GetParabolaABC(first.Site, d.voronoi.SweepLine)
+
+		clr := d.colorOfSite(first.Site)
+		d.ctx.SetPen(clr)
+
+		x := d.dst.Bounds().Max.X
+		next := first.NextArc()
+		if next != nil {
+			intX, err := GetXOfIntersection(first, next, d.voronoi.SweepLine)
+			if err == nil {
+				x = intX
+			}
+		}
+
+		if first.Site.Y == d.voronoi.SweepLine {
+			d.ctx.Line(first.Site.X, 0, first.Site.X, first.Site.Y)
+		} else {
+			d.ctx.ParabolaArc(a, b, c, lastX, x)
+		}
+		lastX = x
+
+		if next != nil {
+			fmt.Printf("Next: %v\r\n", next.Site)
+		} else {
+			fmt.Print("Next: nil\r\n")
+		}
+
+		first = next
+	}
+	fmt.Print("Over\r\n")
 }
 
 // Plot paints the voronoi diagram over the given image.
@@ -125,9 +178,12 @@ func (d *Drawing) Plot() {
 	d.ctx.SetFill(color.White)
 	d.ctx.Rect(0, 0, d.Max().X-1, d.Max().Y-1)
 
+	// Draw beach line
+	d.BeachLine(d.voronoi.ParabolaTree)
+
 	// Draw sites and their labels
 	for i, site := range d.voronoi.Sites {
-		clr := colors[i]
+		clr := d.colorOfSiteIdx(i)
 
 		d.Site(site, clr)
 		label := fmt.Sprintf("Site %d/%d", site.X, site.Y)
