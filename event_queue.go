@@ -21,6 +21,7 @@ type Event struct {
 	X, Y      int       // X and Y of the site, or X and Y of the bottom point of the circle.
 	index     int       // The index in the slice. Maintained by heap.Interface methods. Needed by Remove method.
 	EventType EventType // The type of the event. Site = 0 and Circle = 1.
+	Site      *Site     // Pointer to the related site. Only relevant for site events.
 	Node      *Node     // The related arc node. Only relevant for circle events.
 	Radius    int       // Radius of the circle.
 }
@@ -33,14 +34,15 @@ func NewEventQueue(sites SiteSlice) EventQueue {
 	sort.Sort(sites)
 
 	eventQueue := make(EventQueue, len(sites))
-	i := 0
-	for _, site := range sites {
+	for i := 0; i < len(sites); i++ {
+		site := &sites[i]
 		eventQueue[i] = &Event{
-			X:     site.X,
-			Y:     site.Y,
-			index: i,
+			EventType: EventSite,
+			Site:      site,
+			X:         site.X,
+			Y:         site.Y,
+			index:     i,
 		}
-		i++
 	}
 	heap.Init(&eventQueue)
 	return eventQueue
