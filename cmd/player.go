@@ -11,6 +11,7 @@ import (
 	"image/png"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/quasoft/voronoi"
 )
@@ -33,7 +34,7 @@ func btreeToGraphNode(node *voronoi.Node) *D3Node {
 	site := node.Site
 	var label string
 
-	if site.X == 0 && site.Y == 0 {
+	if site == nil {
 		label = "Internal"
 	} else {
 		label = fmt.Sprintf("Site %v", site)
@@ -58,6 +59,38 @@ func btreeToJSON(node *voronoi.Node) []byte {
 		return []byte{}
 	}
 	return jsonTree
+}
+
+func dumpDCEL(v *voronoi.Voronoi) string {
+	dcel := ""
+	for _, face := range v.DCEL.Faces {
+		dcel += fmt.Sprintf("Face #%d for site %v:\r\n", face.ID, face.Data.(*voronoi.Site))
+		dcel += fmt.Sprintln(strings.Repeat("-", 25))
+
+		edges := v.GetFaceHalfEdges(face)
+		for _, edge := range edges {
+			edgeXY := "nil"
+			if edge.Target != nil {
+				edgeXY = fmt.Sprintf("%d,%d", edge.Target.X, edge.Target.Y)
+			}
+			twinXY := "nil"
+			if edge.Twin != nil && edge.Twin.Target != nil {
+				twinXY = fmt.Sprintf("%d,%d", edge.Twin.Target.X, edge.Twin.Target.Y)
+			}
+
+			dcel += fmt.Sprintf("Target %s, Twin: %s\r\n", edgeXY, twinXY)
+		}
+
+		dcel += fmt.Sprintln()
+		dcel += fmt.Sprintln("Verticies:")
+		vertices := v.GetFaceVertices(face)
+		for _, vertex := range vertices {
+			dcel += fmt.Sprintf("Vertex %d,%d\r\n", vertex.X, vertex.Y)
+		}
+
+		dcel += fmt.Sprintln()
+	}
+	return dcel
 }
 
 func main() {
@@ -91,14 +124,18 @@ func main() {
 			panic(err)
 		}
 
+		dcel := dumpDCEL(v)
+
 		data := struct {
 			SweepLine  int
 			EventsLeft int
 			Log        string
+			DCEL       string
 		}{
 			v.SweepLine,
 			v.EventQueue.Len(),
 			logBuf.String(),
+			dcel,
 		}
 
 		err = t.Execute(w, data)

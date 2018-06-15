@@ -1,6 +1,10 @@
 package voronoi
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/quasoft/dcel"
+)
 
 // Site is a prerequisute for computing a voronoi diagram.
 // Site is the point (also called seed or generator) in a voronoi diagram,
@@ -8,6 +12,9 @@ import "fmt"
 // that every point in the cell is closer to this site than any other site.
 type Site struct {
 	X, Y int
+	ID   int64
+	Face *dcel.Face // Pointer to the DCEL face corresponding to this site
+	Data interface{}
 }
 
 func (s Site) String() string { return fmt.Sprintf("%d,%d", s.X, s.Y) }

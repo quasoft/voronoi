@@ -1,6 +1,10 @@
 package voronoi
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/quasoft/dcel"
+)
 
 // Node represent an element in a binary tree.
 // Each Leaf in the tree represents an arc of a parabola (part of parabola),
@@ -11,7 +15,7 @@ import "fmt"
 type Node struct {
 	// Site is the focus of the parabola arc (the site which created the parabola).
 	// Not used for internal nodes.
-	Site Site
+	Site *Site
 	// Events hold pointers to all circle events, in which this arc participates.
 	// Not used for internal nodes.
 	Events []*Event
@@ -21,6 +25,9 @@ type Node struct {
 	Left *Node
 	// Right stores a subtree of arcs with larger X values.
 	Right *Node
+
+	LeftEdges  []*dcel.HalfEdge
+	RightEdges []*dcel.HalfEdge
 }
 
 // String method from https://github.com/golang/tour/blob/master/tree/tree.go

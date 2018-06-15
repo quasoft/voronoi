@@ -78,10 +78,14 @@ func (p *Plotter) Max() image.Point {
 	return p.dst.Bounds().Max
 }
 
-// SweepLine draws a sweep line with the given Y.
+// SweepLine draws a sweep line with the given Y and a label.
 func (p *Plotter) SweepLine(y int) {
 	p.ctx.SetPen(color.Black)
 	p.ctx.Line(0, y, p.Max().X-1, y)
+
+	label := fmt.Sprintf("Sweep line = %d", p.voronoi.SweepLine)
+	p.ctx.SetTextColor(color.Black)
+	p.ctx.Text(p.Max().X-150, p.voronoi.SweepLine+15, label)
 }
 
 // Site draws the specified site with the given color.
@@ -92,15 +96,15 @@ func (p *Plotter) Site(site Site, clr color.Color) {
 }
 
 // Vertex draws the specified vertex.
-func (p *Plotter) Vertex(vertex RVertex) {
+func (p *Plotter) Vertex(x, y int) {
 	p.ctx.SetPen(p.VertexColor)
-	p.ctx.Cross(vertex.X, vertex.Y, 2)
+	p.ctx.Cross(x, y, 2)
 }
 
-func (p *Plotter) colorOfSite(site Site) color.Color {
+func (p *Plotter) colorOfSite(site *Site) color.Color {
 	siteIdx := 0
 	for i, s := range p.voronoi.Sites {
-		if site == s {
+		if site.X == s.X && site.Y == s.Y {
 			siteIdx = i
 			break
 		}
@@ -159,17 +163,47 @@ func (p *Plotter) BeachLine(tree *Node) {
 	}
 }
 
-// Plot paints the voronoi diagram over the given image.
-func (p *Plotter) Plot() {
-	// Draw border and fill with background color
+// Faces draws surface of faces, filling them with site colour
+func (p *Plotter) Faces() {
+	for _, face := range p.voronoi.DCEL.Faces {
+		vertices := p.voronoi.GetFaceVertices(face)
+		points := make([]image.Point, 0)
+		for _, vertex := range vertices {
+			points = append(points, image.Point{vertex.X, vertex.Y})
+		}
+
+		cr, cg, cb, _ := p.colorOfSite(face.Data.(*Site)).RGBA()
+		clr := color.RGBA{uint8(cr), uint8(cg), uint8(cb), 75}
+		p.ctx.SetPen(color.Transparent)
+		p.ctx.SetFill(clr)
+		p.ctx.Polygon(points)
+	}
+}
+
+// Verticies draws vectices from the DCEL structure
+func (p *Plotter) Verticies() {
+	for _, vertex := range p.voronoi.DCEL.Vertices {
+		p.Vertex(vertex.X, vertex.Y)
+		label := fmt.Sprintf("%d/%d", vertex.X, vertex.Y)
+		p.ctx.SetTextColor(color.Black)
+		p.ctx.Text(vertex.X-20, vertex.Y+15, label)
+	}
+}
+
+// Edges draws edges from the DCEL structure
+func (p *Plotter) Edges() {
 	p.ctx.SetPen(color.Black)
-	p.ctx.SetFill(color.White)
-	p.ctx.Rect(0, 0, p.Max().X-1, p.Max().Y-1)
+	for _, halfEdge := range p.voronoi.DCEL.HalfEdges {
+		if halfEdge.Twin != nil && halfEdge.IsClosed() {
+			org := halfEdge.Target
+			twin := halfEdge.Twin.Target
+			p.ctx.Line(org.X, org.Y, twin.X, twin.Y)
+		}
+	}
+}
 
-	// Draw beach line
-	p.BeachLine(p.voronoi.ParabolaTree)
-
-	// Draw sites and their labels
+// Sites draws site locations
+func (p *Plotter) Sites() {
 	for i, site := range p.voronoi.Sites {
 		clr := p.colorOfSiteIdx(i)
 
@@ -178,17 +212,32 @@ func (p *Plotter) Plot() {
 		p.ctx.SetTextColor(clr)
 		p.ctx.Text(site.X-40, site.Y+15, label)
 	}
+}
 
-	// Draw verteces
-	for _, vertex := range p.voronoi.Result {
-		p.Vertex(vertex)
-	}
+// Plot paints the voronoi diagram over the given image.
+func (p *Plotter) Plot() {
+	// Draw border and fill with background color
+	p.ctx.SetPen(color.Black)
+	p.ctx.SetFill(color.White)
+	p.ctx.Rect(0, 0, p.Max().X-1, p.Max().Y-1)
+
+	// Draw faces
+	p.Faces()
+
+	// Draw vertices
+	p.Verticies()
+
+	// Draw edges
+	p.Edges()
+
+	// Draw beach line
+	p.BeachLine(p.voronoi.ParabolaTree)
+
+	// Draw sites and their labels
+	p.Sites()
 
 	// Draw sweep line with label
 	p.SweepLine(p.voronoi.SweepLine)
-	label := fmt.Sprintf("Sweep line = %d", p.voronoi.SweepLine)
-	p.ctx.SetTextColor(color.Black)
-	p.ctx.Text(p.Max().X-150, p.voronoi.SweepLine+15, label)
 }
 
 // Plot creates an image and paints a voronoi diagram over it.

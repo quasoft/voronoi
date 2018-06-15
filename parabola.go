@@ -9,7 +9,7 @@ import (
 // GetParabolaABC returns the a, b and c coefficients of the standard form of
 // a parabola equation, given only x and y of the focus and y of the directrix.
 // Math behind this is explained at https://math.stackexchange.com/q/2700061/543428.
-func GetParabolaABC(focus Site, yOfDirectrix int) (float64, float64, float64) {
+func GetParabolaABC(focus *Site, yOfDirectrix int) (float64, float64, float64) {
 	// a = 1 / 2(y_{f} - y_{d})
 	// The formula for calculation of a coefficient is derived from the fact that
 	// the distance (d) from the vertex of the parabola to its focus is 1/(4*a).
@@ -73,7 +73,7 @@ func GetXOfIntersection(left *Node, right *Node, directrix int) (int, error) {
 }
 
 // GetYByX calculates the Y value for the parabola with the given focus and directrix (the sweep line)
-func GetYByX(focus Site, x int, directrix int) int {
+func GetYByX(focus *Site, x int, directrix int) int {
 	xf := float64(x)
 	a, b, c := GetParabolaABC(focus, directrix)
 	y := a*math.Pow(xf, 2) + b*xf + c

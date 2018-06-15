@@ -6,15 +6,9 @@ import (
 	"image"
 	"log"
 	"math"
-)
 
-// RVertex repsesent a vertex on the resulting voronoi diagram.
-// Will be replaced with a double-connected edge list structure in a later
-// version of the library.
-type RVertex struct {
-	X int
-	Y int
-}
+	"github.com/quasoft/dcel"
+)
 
 // Voronoi implements Fortune's algorithm for voronoi diagram generation.
 type Voronoi struct {
@@ -23,7 +17,7 @@ type Voronoi struct {
 	EventQueue   EventQueue
 	ParabolaTree *Node
 	SweepLine    int // tracks the current position of the sweep line; updated when a new site is added.
-	Result       []RVertex
+	DCEL         *dcel.DCEL
 }
 
 // New creates a voronoi diagram generator for a list of sites and within the specified bounds.
@@ -38,8 +32,14 @@ func New(sites SiteSlice, bounds image.Rectangle) *Voronoi {
 // NewFromPoints creates a voronoi diagram generator for a list of points within the specified bounds.
 func NewFromPoints(points []image.Point, bounds image.Rectangle) *Voronoi {
 	var sites SiteSlice
+	var id int64
 	for _, point := range points {
-		sites = append(sites, Site{point.X, point.Y})
+		sites = append(sites, Site{
+			X:  point.X,
+			Y:  point.Y,
+			ID: id,
+		})
+		id++
 	}
 	return New(sites, bounds)
 }
@@ -56,15 +56,15 @@ func (v *Voronoi) init() {
 	v.ParabolaTree = nil
 
 	// 3. Create empty doubly-connected edge list (DCEL) for the voronoi diagram
-	// TODO: Create DCEL list
+	v.DCEL = dcel.NewDCEL()
 }
 
 // Reset clears the state of the voronoi generator.
 func (v *Voronoi) Reset() {
 	v.EventQueue = NewEventQueue(v.Sites)
 	v.ParabolaTree = nil
-	v.Result = make([]RVertex, 0)
 	v.SweepLine = 0
+	v.DCEL = dcel.NewDCEL()
 }
 
 // HandleNextEvent processes the next event from the internal event queue.
@@ -100,7 +100,7 @@ func (v *Voronoi) Generate() {
 }
 
 // findNodeAbove finds the node for the parabola that is vertically above the specified site.
-func (v *Voronoi) findNodeAbove(site Site) *Node {
+func (v *Voronoi) findNodeAbove(site *Site) *Node {
 	node := v.ParabolaTree
 
 	for !node.IsLeaf() {
@@ -135,17 +135,21 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 	log.Printf("Sweep line: %d", v.SweepLine)
 	log.Printf("Tree: %v", v.ParabolaTree)
 
-	eventSite := Site{event.X, event.Y}
+	// Create a face for this site and link it to it
+	face := v.DCEL.NewFace()
+	face.ID = event.Site.ID
+	face.Data = event.Site
+	event.Site.Face = face
 
 	// If the binary tree is empty, just add an arc for this site as the only leaf in the tree
 	if v.ParabolaTree == nil {
 		log.Print("Adding event as root\r\n")
-		v.ParabolaTree = &Node{Site: eventSite}
+		v.ParabolaTree = &Node{Site: event.Site}
 		return
 	}
 
 	// If the tree is not empty, find the arc vertically above the new site
-	arcAbove := v.findNodeAbove(eventSite)
+	arcAbove := v.findNodeAbove(event.Site)
 	if arcAbove == nil {
 		log.Print("Could not find arc above event site!\r\n")
 		// Do something
@@ -155,10 +159,9 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 
 	v.removeCircleEvent(arcAbove)
 
-	y := GetYByX(arcAbove.Site, eventSite.X, v.SweepLine)
-	point := RVertex{eventSite.X, y}
-	log.Printf("Y of intersection = %d,%d\r\n", point.X, point.Y)
-	v.Result = append(v.Result, point)
+	y := GetYByX(arcAbove.Site, event.Site.X, v.SweepLine)
+	vertex := v.DCEL.NewVertex(event.Site.X, y)
+	log.Printf("Y of intersection = %d,%d\r\n", vertex.X, vertex.Y)
 
 	// The node above (NA) is replaced wit ha branch with one internal node and three leafs.
 	// The middle leaf stores the new parabola and the other two store the one being split.
@@ -174,13 +177,16 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 		Events: arcAbove.Events,
 		Parent: arcAbove,
 	}
+	oldArcRight := arcAbove.Right
+	oldArcRight.RightEdges = make([]*dcel.HalfEdge, len(arcAbove.RightEdges))
+	copy(oldArcRight.RightEdges, arcAbove.RightEdges)
 
 	// Internal node
 	arcAbove.Left = &Node{Parent: arcAbove}
 
 	// The new arc
 	arcAbove.Left.Right = &Node{
-		Site:   eventSite,
+		Site:   event.Site,
 		Parent: arcAbove.Left,
 	}
 	newArc := arcAbove.Left.Right
@@ -191,10 +197,23 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 		Events: arcAbove.Events,
 		Parent: arcAbove.Left,
 	}
+	oldArcLeft := arcAbove.Left.Left
+	oldArcLeft.LeftEdges = make([]*dcel.HalfEdge, len(arcAbove.LeftEdges))
+	copy(oldArcLeft.LeftEdges, arcAbove.LeftEdges)
 
-	arcAbove.Site.X = 0
-	arcAbove.Site.Y = 0
+	// Internal nodes have no site
+	arcAbove.Site = nil
 	arcAbove.Events = nil
+
+	// Add four new half-edges in DCEL and add a pointer to those
+	// half-edges from the arcs which are tracing them.
+	edge1, edge2 := v.DCEL.NewEdge(oldArcLeft.Site.Face, newArc.Site.Face, vertex)
+	oldArcLeft.RightEdges = append(oldArcLeft.RightEdges, edge1)
+	newArc.LeftEdges = append(newArc.LeftEdges, edge2)
+
+	edge3, edge4 := v.DCEL.NewEdge(newArc.Site.Face, oldArcRight.Site.Face, vertex)
+	newArc.RightEdges = append(newArc.RightEdges, edge3)
+	oldArcRight.LeftEdges = append(oldArcRight.LeftEdges, edge4)
 
 	// Check for circle events where the new arc is the right most arc
 	prevArc := newArc.PrevArc()
@@ -211,7 +230,7 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 
 // calcCircle checks if the circle passing through three sites is counter-clockwise,
 // and retunrs the center of the circle and it's radius if it is.
-func (v *Voronoi) calcCircle(site1, site2, site3 Site) (x int, y int, r int, err error) {
+func (v *Voronoi) calcCircle(site1, site2, site3 *Site) (x int, y int, r int, err error) {
 	// Solution by https://math.stackexchange.com/a/1268279/543428
 	// Explanation at http://mathforum.org/library/drmath/view/55002.html
 	x = 0
@@ -306,12 +325,21 @@ func (v *Voronoi) handleCircleEvent(event *Event) {
 
 	log.Printf("Node to be removed: %v", event.Node)
 
+	// Add center of circle as vertex
+	vertex := v.DCEL.NewVertex(event.X, event.Y-event.Radius)
+	log.Printf("Vertex at %d,%d (center of circle)\r\n", vertex.X, vertex.Y)
+
+	// Finish edges for the node that is about to be removed
+	v.CloseTwins(event.Node.LeftEdges, vertex)
+	v.CloseTwins(event.Node.RightEdges, vertex)
+
 	// Delete the arc for event.Node from the tree
 	prevArc := event.Node.PrevArc()
 	nextArc := event.Node.NextArc()
 	log.Printf("Removing arc %v between %v and %v", event.Node, prevArc, nextArc)
 	log.Printf("Previous arc: %v", prevArc)
 	log.Printf("Next arc: %v", nextArc)
+	// TODO: Remove any common half-edges between event.Node and prevArc or nextArc
 	v.removeArc(event.Node)
 
 	// Remove circle events
@@ -319,16 +347,24 @@ func (v *Voronoi) handleCircleEvent(event *Event) {
 	v.removeCircleEvent(event.Node)
 	v.removeCircleEvent(nextArc)
 
-	// Add center of circle as vertex
-	point := RVertex{event.X, event.Y - event.Radius}
-	log.Printf("Vertex at %d,%d (center of circle)\r\n", point.X, point.Y)
-	v.Result = append(v.Result, point)
+	// Finish edges for the neighbouring edges.
+	v.CloseTwins(prevArc.RightEdges, vertex)
+	v.CloseTwins(nextArc.LeftEdges, vertex)
+
+	// Create a new edge in DCEL with this vertex as a target.
+	// Attach the half edges to the corresponding arc.
+	edge1, edge2 := v.DCEL.NewEdge(prevArc.Site.Face, nextArc.Site.Face, vertex)
+	prevArc.RightEdges = append(prevArc.RightEdges, edge1)
+	nextArc.LeftEdges = append(nextArc.LeftEdges, edge2)
+
+	// TODO: Check for other circles? Rebuild circle events with prevArc and nextArc.
 
 	return
 }
 
 // removeArc removes the given arc leaf from the binary tree.
 func (v *Voronoi) removeArc(node *Node) {
+	// TODO: Consider the case of removing several arcs at once
 	parent := node.Parent
 	other := (*Node)(nil)
 	if parent.Left == node {
