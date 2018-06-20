@@ -58,14 +58,14 @@ func (s halfEdgesByCCW) Less(i, j int) bool {
 func (v *Voronoi) GetFaceHalfEdges(face *dcel.Face) []*dcel.HalfEdge {
 	var edges []*dcel.HalfEdge
 	exists := make(map[string]bool)
-	for _, edge := range v.DCEL.HalfEdges {
-		if edge.Face.ID == face.ID {
-			id := fmt.Sprintf("%v", edge.Target)
-			if !exists[id] {
-				exists[id] = true
-				edges = append(edges, edge)
-			}
+	edge := face.HalfEdge
+	for edge != nil {
+		id := fmt.Sprintf("%v", edge.Target)
+		if !exists[id] {
+			exists[id] = true
+			edges = append(edges, edge)
 		}
+		edge = edge.Next
 	}
 
 	sort.Sort(halfEdgesByCCW(edges))
@@ -103,24 +103,24 @@ func (s verticesByCCW) Less(i, j int) bool {
 func (v *Voronoi) GetFaceVertices(face *dcel.Face) []*dcel.Vertex {
 	var vertices []*dcel.Vertex
 	exists := make(map[string]bool)
-	for _, edge := range v.DCEL.HalfEdges {
-		if edge.Face.ID == face.ID {
-			if edge.Target != nil {
-				id := fmt.Sprintf("%v", edge.Target)
-				if !exists[id] {
-					exists[id] = true
-					vertices = append(vertices, edge.Target)
-				}
-			}
-
-			if edge.Twin != nil && edge.Twin.Target != nil {
-				id := fmt.Sprintf("%v", edge.Twin.Target)
-				if !exists[id] {
-					exists[id] = true
-					vertices = append(vertices, edge.Twin.Target)
-				}
+	edge := face.HalfEdge
+	for edge != nil {
+		if edge.Target != nil {
+			id := fmt.Sprintf("%v", edge.Target)
+			if !exists[id] {
+				exists[id] = true
+				vertices = append(vertices, edge.Target)
 			}
 		}
+
+		if edge.Twin != nil && edge.Twin.Target != nil {
+			id := fmt.Sprintf("%v", edge.Twin.Target)
+			if !exists[id] {
+				exists[id] = true
+				vertices = append(vertices, edge.Twin.Target)
+			}
+		}
+		edge = edge.Next
 	}
 
 	sort.Sort(verticesByCCW(vertices))
