@@ -70,22 +70,24 @@ func (v *Voronoi) Reset() {
 // HandleNextEvent processes the next event from the internal event queue.
 // Used from the player application while developing the algorithm.
 func (v *Voronoi) HandleNextEvent() {
-	if v.EventQueue.Len() > 0 {
-		// Process events by Y (priority)
-		event := heap.Pop(&v.EventQueue).(*Event)
+	if v.EventQueue.Len() <= 0 {
+		return
+	}
 
-		// Event with Y above the sweep line should be ignored.
-		if event.Y < v.SweepLine {
-			log.Printf("Ignoring event with Y %d as it's above the sweep line (%d)\r\n", event.Y, v.SweepLine)
-			return
-		}
+	// Process events by Y (priority)
+	event := heap.Pop(&v.EventQueue).(*Event)
 
-		v.SweepLine = event.Y
-		if event.EventType == EventSite {
-			v.handleSiteEvent(event)
-		} else {
-			v.handleCircleEvent(event)
-		}
+	// Event with Y above the sweep line should be ignored.
+	if event.Y < v.SweepLine {
+		log.Printf("Ignoring event with Y %d as it's above the sweep line (%d)\r\n", event.Y, v.SweepLine)
+		return
+	}
+
+	v.SweepLine = event.Y
+	if event.EventType == EventSite {
+		v.handleSiteEvent(event)
+	} else {
+		v.handleCircleEvent(event)
 	}
 }
 
