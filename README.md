@@ -5,7 +5,7 @@ Golang package for generation of voronoi diagrams with Fortune's algorithm.
 *Work in progress. Calculates verticies, but is not yet building a full DCEL data structure with the results.*
 
 ## TODO:
-- [ ] Connect half-edges in DCEL structure in counter-clockwise order.
+- [ ] Connect unfinite half-edges to the bounding box.
 
 ## How to debug
 
