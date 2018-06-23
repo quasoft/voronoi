@@ -175,9 +175,9 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 
 	// Copy of the old arc
 	arcAbove.Right = &Node{
-		Site:   arcAbove.Site,
-		Events: arcAbove.Events,
-		Parent: arcAbove,
+		Site:       arcAbove.Site,
+		LeftEvents: arcAbove.LeftEvents,
+		Parent:     arcAbove,
 	}
 	oldArcRight := arcAbove.Right
 	oldArcRight.RightEdges = make([]*dcel.HalfEdge, len(arcAbove.RightEdges))
@@ -195,9 +195,9 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 
 	// Copy of the old arc
 	arcAbove.Left.Left = &Node{
-		Site:   arcAbove.Site,
-		Events: arcAbove.Events,
-		Parent: arcAbove.Left,
+		Site:        arcAbove.Site,
+		RightEvents: arcAbove.RightEvents,
+		Parent:      arcAbove.Left,
 	}
 	oldArcLeft := arcAbove.Left.Left
 	oldArcLeft.LeftEdges = make([]*dcel.HalfEdge, len(arcAbove.LeftEdges))
@@ -205,7 +205,9 @@ func (v *Voronoi) handleSiteEvent(event *Event) {
 
 	// Internal nodes have no site
 	arcAbove.Site = nil
-	arcAbove.Events = nil
+	arcAbove.LeftEvents = nil
+	arcAbove.MiddleEvents = nil
+	arcAbove.RightEvents = nil
 
 	// Add four new half-edges in DCEL and add a pointer to those
 	// half-edges from the arcs which are tracing them.
@@ -301,7 +303,8 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *Node) {
 
 	// Only add events with bottom point below the sweep line
 	bottomY := y + r
-	if bottomY <= v.SweepLine {
+	if bottomY < v.SweepLine {
+		log.Printf("bottomY (%d) would be below sweep line (%d)", bottomY, v.SweepLine)
 		return
 	}
 
@@ -313,9 +316,9 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *Node) {
 	}
 	v.EventQueue.Push(event)
 
-	arc1.AddEvent(event)
-	arc2.AddEvent(event)
-	arc3.AddEvent(event)
+	arc1.AddLeftEvent(event)
+	arc2.AddMiddleEvent(event)
+	arc3.AddRightEvent(event)
 	event.Node = arc2
 
 	log.Printf("Added circle with center %d,%d, r=%d and bottom Y=%d\r\n", x, y, r, bottomY)
@@ -347,9 +350,7 @@ func (v *Voronoi) handleCircleEvent(event *Event) {
 	v.removeArc(event.Node)
 
 	// Remove circle events
-	v.removeCircleEvent(prevArc)
-	v.removeCircleEvent(event.Node)
-	v.removeCircleEvent(nextArc)
+	v.removeAllCircleEvents(event.Node)
 
 	// Check for new circle events where the former left arc is the middle
 	prevPrevArc := prevArc.PrevArc()
@@ -368,8 +369,6 @@ func (v *Voronoi) handleCircleEvent(event *Event) {
 	edge1, edge2 := v.DCEL.NewEdge(prevArc.Site.Face, nextArc.Site.Face, vertex)
 	prevArc.RightEdges = append(prevArc.RightEdges, edge1)
 	nextArc.LeftEdges = append(nextArc.LeftEdges, edge2)
-
-	// TODO: Check for other circles? Rebuild circle events with prevArc and nextArc.
 
 	return
 }
@@ -400,20 +399,70 @@ func (v *Voronoi) removeArc(node *Node) {
 	}
 }
 
-// removeCircleEvent remove the circle event where the specified node represents the middle arc.
-func (v *Voronoi) removeCircleEvent(node *Node) {
+// removeCircleEvent removes only the circle event where the specified node represents the middle arc.
+func (v *Voronoi) removeCircleEvent(middleNode *Node) {
+	if middleNode == nil {
+		return
+	}
+
+	if len(middleNode.MiddleEvents) > 0 {
+		log.Printf("Removing circle event where arc %v is the middle.\r\n", middleNode.Site)
+
+		for _, e := range middleNode.MiddleEvents {
+			if e.index <= -1 {
+				// The event was already removed
+				continue
+			}
+
+			v.EventQueue.Remove(e)
+		}
+		middleNode.MiddleEvents = nil
+
+		prevArc := middleNode.PrevArc()
+		if prevArc != nil {
+			prevArc.RightEvents = nil
+		}
+		nextArc := middleNode.NextArc()
+		if nextArc != nil {
+			nextArc.LeftEvents = nil
+		}
+	}
+}
+
+// removeAllCircleEvents removes all circle events in which the node participates.
+func (v *Voronoi) removeAllCircleEvents(node *Node) {
 	if node == nil {
 		return
 	}
 
-	if len(node.Events) > 0 {
-		log.Printf("Removing %d events from queue for arc %v.\r\n", len(node.Events), node.Site)
+	// Combine all events in one place, for convenience
+	node.MiddleEvents = append(node.MiddleEvents, node.LeftEvents...)
+	node.MiddleEvents = append(node.MiddleEvents, node.RightEvents...)
 
-		for _, e := range node.Events {
-			if e.index > -1 {
-				v.EventQueue.Remove(e)
+	neighbours := []*Node{
+		node.PrevArc().PrevArc(),
+		node.PrevArc(),
+		node.NextArc(),
+		node.NextArc().NextArc(),
+	}
+
+	if len(node.MiddleEvents) > 0 {
+		log.Printf("Removing circle events for arc %v.\r\n", node.Site)
+
+		for _, e := range node.MiddleEvents {
+			if e.index <= -1 {
+				// The event was already removed
+				continue
+			}
+
+			v.EventQueue.Remove(e)
+
+			for _, n := range neighbours {
+				n.RemoveEvent(e)
 			}
 		}
-		node.Events = nil
+		node.LeftEvents = nil
+		node.MiddleEvents = nil
+		node.RightEvents = nil
 	}
 }

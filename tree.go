@@ -6,6 +6,29 @@ import (
 	"github.com/quasoft/dcel"
 )
 
+// CircleEvents represents a list of pointers to circle events in which the node participates.
+type CircleEvents []*Event
+
+// RemoveEvent removes the given event from the list.
+func (ce *CircleEvents) RemoveEvent(event *Event) {
+	for i := len(*ce) - 1; i >= 0; i-- {
+		if (*ce)[i] == event {
+			(*ce)[i] = (*ce)[len(*ce)-1]
+			*ce = (*ce)[:len(*ce)-1]
+		}
+	}
+}
+
+// HasEvent tests if the node has a pointer to the given event.
+func (ce *CircleEvents) HasEvent(event *Event) bool {
+	for i := 0; i < len(*ce); i++ {
+		if (*ce)[i] == event {
+			return true
+		}
+	}
+	return false
+}
+
 // Node represent an element in a binary tree.
 // Each Leaf in the tree represents an arc of a parabola (part of parabola),
 // that lies on the beach line. Leaf nodes store the site that created the arc
@@ -16,9 +39,9 @@ type Node struct {
 	// Site is the focus of the parabola arc (the site which created the parabola).
 	// Not used for internal nodes.
 	Site *Site
-	// Events hold pointers to all circle events, in which this arc participates.
+	// Events hold pointers to circle events, in which this arc is the left most, middle or right-most arc.
 	// Not used for internal nodes.
-	Events []*Event
+	LeftEvents, MiddleEvents, RightEvents CircleEvents
 	// Pointer to the parent node.
 	Parent *Node
 	// Left stores a subtree of arcs with smaller X values.
@@ -171,7 +194,30 @@ func (n *Node) LastArc() *Node {
 	return last
 }
 
-// AddEvent pushes a pointer to an event in the Events list of the node.
-func (n *Node) AddEvent(event *Event) {
-	n.Events = append(n.Events, event)
+// AddLeftEvent pushes a pointer to an event for which this is the left-most node.
+func (n *Node) AddLeftEvent(event *Event) {
+	n.LeftEvents = append(n.LeftEvents, event)
+}
+
+// AddMiddleEvent pushes a pointer to an event for which this is the left-most node.
+func (n *Node) AddMiddleEvent(event *Event) {
+	n.MiddleEvents = append(n.MiddleEvents, event)
+}
+
+// AddRightEvent pushes a pointer to an event for which this is the left-most node.
+func (n *Node) AddRightEvent(event *Event) {
+	n.RightEvents = append(n.RightEvents, event)
+}
+
+// RemoveEvent removes the given event from the lists of the node.
+func (n *Node) RemoveEvent(event *Event) {
+	n.LeftEvents.RemoveEvent(event)
+	n.MiddleEvents.RemoveEvent(event)
+	n.RightEvents.RemoveEvent(event)
+}
+
+// HasEvent tests if the node has a pointer to the given event.
+func (n *Node) HasEvent(event *Event) bool {
+	return n.LeftEvents.HasEvent(event) || n.MiddleEvents.HasEvent(event) ||
+		n.RightEvents.HasEvent(event)
 }
