@@ -313,7 +313,9 @@ func (v *Voronoi) addCircleEvent(arc1, arc2, arc3 *Node) {
 	}
 	v.EventQueue.Push(event)
 
+	arc1.AddEvent(event)
 	arc2.AddEvent(event)
+	arc3.AddEvent(event)
 	event.Node = arc2
 
 	log.Printf("Added circle with center %d,%d, r=%d and bottom Y=%d\r\n", x, y, r, bottomY)
@@ -348,6 +350,14 @@ func (v *Voronoi) handleCircleEvent(event *Event) {
 	v.removeCircleEvent(prevArc)
 	v.removeCircleEvent(event.Node)
 	v.removeCircleEvent(nextArc)
+
+	// Check for new circle events where the former left arc is the middle
+	prevPrevArc := prevArc.PrevArc()
+	v.addCircleEvent(prevPrevArc, prevArc, nextArc)
+
+	// Check for new circle events where the former right arc is the middle
+	nextNextArc := nextArc.NextArc()
+	v.addCircleEvent(prevArc, nextArc, nextNextArc)
 
 	// Finish edges for the neighbouring edges.
 	v.CloseTwins(prevArc.RightEdges, vertex)
