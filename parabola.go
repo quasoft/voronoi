@@ -43,6 +43,20 @@ func GetXOfIntersection(left *Node, right *Node, directrix int) (int, error) {
 	leftFocus := left.Site
 	rightFocus := right.Site
 
+	// If two parabolas have the same Y, then the intersection lies exactly at the
+	// middle between them.
+	if leftFocus.Y == rightFocus.Y {
+		return (leftFocus.X + rightFocus.X) / 2, nil
+	}
+
+	// Handle the degenerate case where one or both of the sites have the same Y value.
+	// In this case the focus of one or both sites and the directrix would be equal.
+	if leftFocus.Y == directrix {
+		return leftFocus.X, nil
+	} else if rightFocus.Y == directrix {
+		return rightFocus.X, nil
+	}
+
 	// Determine the a, b and c coefficients for the two parabolas
 	a1, b1, c1 := GetParabolaABC(leftFocus, directrix)
 	a2, b2, c2 := GetParabolaABC(rightFocus, directrix)

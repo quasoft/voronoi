@@ -72,7 +72,7 @@ func (pq EventQueue) Len() int { return len(pq) }
 // Less compares two events and is needed as implementation of the Sort interface.
 func (pq EventQueue) Less(i, j int) bool {
 	// We want Pop to give us the event with highest 'y' position.
-	return pq[i].Y < pq[j].Y
+	return pq[i].Y < pq[j].Y || (pq[i].Y == pq[j].Y && pq[i].X < pq[j].X)
 }
 
 // Swap swaps two events, updating their index in the slice.

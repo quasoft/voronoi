@@ -22,6 +22,8 @@ func (s Site) String() string { return fmt.Sprintf("%d,%d", s.X, s.Y) }
 // SiteSlice is a slice of Site values, sortable by Y
 type SiteSlice []Site
 
-func (s SiteSlice) Len() int           { return len(s) }
-func (s SiteSlice) Less(i, j int) bool { return s[i].Y < s[j].Y }
-func (s SiteSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s SiteSlice) Len() int { return len(s) }
+func (s SiteSlice) Less(i, j int) bool {
+	return s[i].Y < s[j].Y || (s[i].Y == s[j].Y && s[i].X < s[j].X)
+}
+func (s SiteSlice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
