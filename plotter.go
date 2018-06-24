@@ -166,10 +166,13 @@ func (p *Plotter) BeachLine(tree *Node) {
 // Faces draws surface of faces, filling them with site colour
 func (p *Plotter) Faces() {
 	for _, face := range p.voronoi.DCEL.Faces {
-		vertices := p.voronoi.GetFaceVertices(face)
+		edges := p.voronoi.GetFaceHalfEdges(face)
 		points := make([]image.Point, 0)
-		for _, vertex := range vertices {
-			points = append(points, image.Point{vertex.X, vertex.Y})
+		for _, edge := range edges {
+			if edge.Target == nil {
+				continue
+			}
+			points = append(points, image.Point{edge.Target.X, edge.Target.Y})
 		}
 
 		cr, cg, cb, _ := p.colorOfSite(face.Data.(*Site)).RGBA()
