@@ -73,17 +73,20 @@ func (s halfEdgesByCCW) UpdateLinks() {
 	}
 }
 
-// GetFaceHalfEdges returns the half-edges that form the boundary of a face (cell).
-func (v *Voronoi) GetFaceHalfEdges(face *dcel.Face) []*dcel.HalfEdge {
+// ReorderFaceEdges reorders face half-edges in a clockwise way, while also removing duplicates.
+func (v *Voronoi) ReorderFaceEdges(face *dcel.Face) {
 	var edges []*dcel.HalfEdge
-	exists := make(map[string]bool)
+	//exists := make(map[string]bool)
 	edge := face.HalfEdge
 	for edge != nil {
-		id := fmt.Sprintf("%v", edge.Target)
-		if !exists[id] {
-			exists[id] = true
-			edges = append(edges, edge)
-		}
+		/*
+			id := fmt.Sprintf("%v", edge.Target)
+			if !exists[id] {
+				exists[id] = true
+				edges = append(edges, edge)
+			}
+		*/
+		edges = append(edges, edge)
 		edge = edge.Next
 		if edge == face.HalfEdge {
 			break
@@ -92,6 +95,22 @@ func (v *Voronoi) GetFaceHalfEdges(face *dcel.Face) []*dcel.HalfEdge {
 
 	sort.Sort(halfEdgesByCCW(edges))
 	halfEdgesByCCW(edges).UpdateLinks()
+}
+
+// GetFaceHalfEdges returns the half-edges that form the boundary of a face (cell).
+func (v *Voronoi) GetFaceHalfEdges(face *dcel.Face) []*dcel.HalfEdge {
+	v.ReorderFaceEdges(face)
+
+	var edges []*dcel.HalfEdge
+	edge := face.HalfEdge
+	for edge != nil {
+		edges = append(edges, edge)
+		edge = edge.Next
+		if edge == face.HalfEdge {
+			break
+		}
+	}
+
 	return edges
 }
 
