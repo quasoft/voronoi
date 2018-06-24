@@ -30,8 +30,10 @@ func (s halfEdgesByCCW) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 func (s halfEdgesByCCW) Less(i, j int) bool {
-	if s[i].Target == nil || s[j].Target == nil {
+	if s[i].Target == nil {
 		return false
+	} else if s[j].Target == nil {
+		return true
 	}
 
 	// Find center of polygon
@@ -54,6 +56,23 @@ func (s halfEdgesByCCW) Less(i, j int) bool {
 	return a1 >= a2
 }
 
+func (s halfEdgesByCCW) UpdateLinks() {
+	for i := 0; i < len(s); i++ {
+		if i > 0 {
+			s[i].Prev, s[i-1].Next = s[i-1], s[i]
+		}
+		if i < len(s)-1 {
+			s[i].Next, s[i+1].Prev = s[i+1], s[i]
+		}
+	}
+
+	if len(s) == 1 {
+		s[0].Prev, s[0].Next = nil, nil
+	} else if len(s) > 1 {
+		s[0].Prev, s[len(s)-1].Next = s[len(s)-1], s[0]
+	}
+}
+
 // GetFaceHalfEdges returns the half-edges that form the boundary of a face (cell).
 func (v *Voronoi) GetFaceHalfEdges(face *dcel.Face) []*dcel.HalfEdge {
 	var edges []*dcel.HalfEdge
@@ -66,9 +85,13 @@ func (v *Voronoi) GetFaceHalfEdges(face *dcel.Face) []*dcel.HalfEdge {
 			edges = append(edges, edge)
 		}
 		edge = edge.Next
+		if edge == face.HalfEdge {
+			break
+		}
 	}
 
 	sort.Sort(halfEdgesByCCW(edges))
+	halfEdgesByCCW(edges).UpdateLinks()
 	return edges
 }
 
@@ -121,6 +144,9 @@ func (v *Voronoi) GetFaceVertices(face *dcel.Face) []*dcel.Vertex {
 			}
 		}
 		edge = edge.Next
+		if edge == face.HalfEdge {
+			break
+		}
 	}
 
 	sort.Sort(verticesByCCW(vertices))
