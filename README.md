@@ -16,7 +16,7 @@ go run player.go
 
 `player` is a standalone tool (standalone web server) for visualization of the algorithm of [github.com/quasoft/voronoi](https://github.com/quasoft/voronoi) in steps:
 
-![Screenshot of the player tool](docs/player-screenshot.png)
+![Screenshot of the player tool](docs/player-demo.gif)
 
 Pressing the [Next] link advances the algorithm to the next event and updates the visualization at the left.
 
