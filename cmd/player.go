@@ -157,6 +157,12 @@ func main() {
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
+	// Process all events from the queue and update the visualization
+	http.HandleFunc("/generate", func(w http.ResponseWriter, r *http.Request) {
+		v.Generate()
+		http.Redirect(w, r, "/", http.StatusFound)
+	})
+
 	// Plot the voronoi diagram state into an image
 	http.HandleFunc("/diagram.png", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
