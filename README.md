@@ -2,10 +2,10 @@
 
 Golang package for generation of voronoi diagrams with Fortune's algorithm.
 
-*Work in progress. Calculates verticies, but is not yet building a full DCEL data structure with the results.*
+*Work in progress. Populates a DCEL data structure, but does not connect infinite half-edges to the bounding box.*
 
 ## TODO:
-- [ ] Connect unfinite half-edges to the bounding box.
+- [ ] Connect infinite half-edges to the bounding box.
 
 ## How to debug
 
